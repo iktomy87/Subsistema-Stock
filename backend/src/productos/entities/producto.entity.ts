@@ -22,12 +22,6 @@ export class Producto {
   @Column({ name: 'peso_kg', type: 'float', nullable: true })
   pesoKg: number;
 
-  @Column({ name: 'fecha_creacion', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fechaCreacion: Date;
-
-  @Column({ name: 'fecha_actualizacion', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  fechaActualizacion: Date;
-
   @Column({ default: true })
   activo: boolean;
 

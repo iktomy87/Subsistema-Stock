@@ -6,6 +6,7 @@ import { Categoria } from './entities/categoria.entity';
 import { ImagenProducto } from './entities/imagen-producto.entity';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { PaginatedResponse } from './interfaces/pagination.interface';
 
 @Injectable()
 export class ProductosService {
@@ -18,9 +19,7 @@ export class ProductosService {
     private imagenesRepository: Repository<ImagenProducto>,
   ) {}
 
-  async findAll(page: number = 1, limit: number = 10, search?: string, categoriaId?: number) {
-    const skip = (page - 1) * limit;
-    
+  async findAll(page?: number, limit?: number, search?: string, categoriaId?: number): Promise<PaginatedResponse<Producto>> {
     const query = this.productosRepository.createQueryBuilder('producto')
       .leftJoinAndSelect('producto.imagenes', 'imagenes')
       .leftJoinAndSelect('producto.categorias', 'categorias')
@@ -34,22 +33,40 @@ export class ProductosService {
       query.andWhere('categorias.id = :categoriaId', { categoriaId });
     }
 
-    const [data, total] = await query
-      .skip(skip)
-      .take(limit)
-      .orderBy('producto.fechaCreacion', 'DESC')
-      .getManyAndCount();
+    query.orderBy('producto.id', 'DESC');
 
-    return {
-      data,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
+    // Paginación opcional
+    const shouldPaginate = page !== undefined && limit !== undefined;
+    
+    if (shouldPaginate) {
+      const validatedLimit = Math.max(1, Math.min(limit, 100));
+      const validatedPage = Math.max(1, page);
+      const skip = (validatedPage - 1) * validatedLimit;
+      
+      query.skip(skip).take(validatedLimit);
+
+      const [data, total] = await query.getManyAndCount();
+
+      return {
+        data,
+        meta: {
+          page: validatedPage,
+          limit: validatedLimit,
+          total,
+          totalPages: Math.ceil(total / validatedLimit),
+        },
+      };
+    } else {
+      // Sin paginación - devolver todos los resultados
+      const data = await query.getMany();
+      const total = data.length;
+      
+      return {
+        data,
+        // meta es opcional, así que no se incluye cuando no hay paginación
+      };
+    }
+}
 
   async findOne(id: number): Promise<Producto> {
     const producto = await this.productosRepository.findOne({
@@ -67,7 +84,7 @@ export class ProductosService {
   async create(createProductoDto: CreateProductoDto): Promise<{ id: number; mensaje: string }> {
     const { categoriaIds, imagenes, ...productoData } = createProductoDto;
 
-    // ✅ Validar que las categorías existen
+    // Validar que las categorías existen
     if (categoriaIds && categoriaIds.length > 0) {
       const categoriasCount = await this.categoriasRepository.count({
         where: { id: In(categoriaIds) }
@@ -93,12 +110,11 @@ export class ProductosService {
 
     const productoGuardado = await this.productosRepository.save(producto);
 
-    // ✅ Corregir: Guardar imágenes correctamente
     if (imagenes && imagenes.length > 0) {
       const imagenesEntities = imagenes.map(url => 
         this.imagenesRepository.create({
-          url: url, // ✅ Especificar la propiedad 'url'
-          producto: productoGuardado // ✅ Usar la relación en lugar de productoId
+          url: url, 
+          producto: productoGuardado 
         })
       );
       await this.imagenesRepository.save(imagenesEntities);
@@ -115,7 +131,7 @@ export class ProductosService {
     
     const { categoriaIds, imagenes, ...productoData } = updateProductoDto;
 
-    // ✅ Validar categorías si se proporcionan
+    // Validar categorías si se proporcionan
     if (categoriaIds !== undefined) {
       if (categoriaIds.length > 0) {
         const categoriasCount = await this.categoriasRepository.count({
@@ -143,7 +159,6 @@ export class ProductosService {
 
     await this.productosRepository.save(producto);
 
-    // ✅ Corregir: Actualizar imágenes correctamente
     if (imagenes !== undefined) {
       // Eliminar imágenes existentes
       await this.imagenesRepository.delete({ producto: { id: id } });

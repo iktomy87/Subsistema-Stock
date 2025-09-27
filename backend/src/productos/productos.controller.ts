@@ -16,17 +16,8 @@ import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
+import { PaginatedResponse } from './interfaces/pagination.interface';
 
-// ✅ Definir interfaz de paginación si no existe
-interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 @Controller('productos')
 export class ProductosController {
@@ -34,16 +25,17 @@ export class ProductosController {
 
   @Get()
   async findAll(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('q') search?: string,
-    @Query('categoriaId', new DefaultValuePipe(undefined), ParseIntPipe) categoriaId?: number,
+    @Query('categoriaId') categoriaId?: string,
   ): Promise<PaginatedResponse<Producto>> {
-    // Aseguramos que los límites estén dentro del rango permitido
-    limit = Math.max(1, Math.min(limit, 100));
+
+    const pageNum = page ? parseInt(page) : undefined;
+    const limitNum = limit ? parseInt(limit) : undefined;
+    const categoriaIdNum = categoriaId ? parseInt(categoriaId) : undefined;
     
-    // Pasar categoriaId al servicio
-    return this.productosService.findAll(page, limit, search, categoriaId);
+    return this.productosService.findAll(pageNum, limitNum, search, categoriaIdNum);
   }
 
   @Get(':id')
