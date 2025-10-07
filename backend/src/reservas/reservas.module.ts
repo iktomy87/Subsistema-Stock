@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { StockController } from './stock.controller';
-import { StockService } from './stock.service';
+import { ReservaController } from './reservas.controller';
+import { ReservasService } from './reservas.service';
 import { Reserva } from './entities/reserva.entity';
 import { DetalleReserva } from './entities/detalle-reserva.entity';
 import { ProductosModule } from '../productos/productos.module';
@@ -11,8 +11,8 @@ import { ProductosModule } from '../productos/productos.module';
     TypeOrmModule.forFeature([Reserva, DetalleReserva]),
     ProductosModule,
   ],
-  controllers: [StockController],
-  providers: [StockService],
-  exports: [StockService],
+  controllers: [ReservaController],
+  providers: [ReservasService],
+  exports: [ReservasService],
 })
-export class StockModule {}
+export class ReservasModule {}

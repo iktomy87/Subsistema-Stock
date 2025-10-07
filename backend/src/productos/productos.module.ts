@@ -4,8 +4,8 @@ import { ProductosController } from './productos.controller';
 import { ProductosService } from './productos.service';
 import { Producto } from './entities/producto.entity';
 import { ImagenProducto } from './entities/imagen-producto.entity';
-import { Categoria } from './entities/categoria.entity';
-import { CategoriasModule } from './categorias.module';
+import { Categoria } from '../categorias/entities/categoria.entity';
+import { CategoriasModule } from '../categorias/categorias.module';
 
 @Module({
   imports: [

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Like } from 'typeorm';
 import { Producto } from './entities/producto.entity';
-import { Categoria } from './entities/categoria.entity';
+import { Categoria } from '../categorias/entities/categoria.entity';
 import { ImagenProducto } from './entities/imagen-producto.entity';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';

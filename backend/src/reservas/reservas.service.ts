@@ -4,11 +4,11 @@ import { Repository } from 'typeorm';
 import { Reserva } from './entities/reserva.entity';
 import { DetalleReserva } from './entities/detalle-reserva.entity';
 import { ProductosService } from '../productos/productos.service';
-import { ReservaInputDto } from './dto/reserva-input.dto';
-import { LiberacionInputDto } from './dto/liberacion-input.dto';
+import { ReservaInputDto } from './dto/create-reserva.dto';
+import { UpdateReservaDto } from './dto/update-reserva.dto';
 
 @Injectable()
-export class StockService {
+export class ReservasService {
   constructor(
     @InjectRepository(Reserva)
     private reservasRepository: Repository<Reserva>,
@@ -55,7 +55,7 @@ export class StockService {
     };
   }
 
-  async liberar(liberacionInput: LiberacionInputDto) {
+  async liberar(liberacionInput: UpdateReservaDto) {
     const reserva = await this.reservasRepository.findOne({
       where: { id: liberacionInput.idReserva },
       relations: ['detalles']
