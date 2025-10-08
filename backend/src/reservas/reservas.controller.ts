@@ -3,7 +3,7 @@ import { ReservasService } from './reservas.service';
 import { ReservaInputDto } from './dto/create-reserva.dto';
 import { UpdateReservaDto } from './dto/update-reserva.dto';
 
-@Controller('reserva')
+@Controller('reservas')
 export class ReservaController {
   constructor(private readonly reservaService: ReservasService) {}
 
