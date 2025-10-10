@@ -8,31 +8,24 @@ import { ImagenProducto } from '../../entities/imagen-producto.entity';
 import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { UpdateProductoDto } from '../../dto/update-producto.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { In } from 'typeorm';
 
 describe('ProductosService', () => {
   let service: ProductosService;
   let productoRepository: Repository<Producto>;
   let categoriaRepository: Repository<Categoria>;
   let imagenRepository: Repository<ImagenProducto>;
+  let mockQueryBuilder: any;
 
   const mockProductoRepository = {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
-    createQueryBuilder: jest.fn(() => ({
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getManyAndCount: jest.fn(),
-      getMany: jest.fn(),
-    })),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     decrement: jest.fn(),
     increment: jest.fn(),
   };
-
+  
   const mockCategoriaRepository = {
     findBy: jest.fn(),
     count: jest.fn(),
@@ -45,6 +38,18 @@ describe('ProductosService', () => {
   };
 
   beforeEach(async () => {
+    mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+      getMany: jest.fn(),
+    };
+
+    mockProductoRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductosService,
@@ -217,7 +222,7 @@ describe('ProductosService', () => {
 
       expect(result.id).toBe(1);
       expect(mockCategoriaRepository.count).toHaveBeenCalledWith({
-        where: { id: [1, 2] }
+        where: { id: In([1, 2]) }
       });
       expect(mockImagenRepository.save).toHaveBeenCalled();
     });
