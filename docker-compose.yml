@@ -30,5 +30,16 @@ services:
     depends_on:
       - db
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: stock_frontend
+    restart: always
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+
 volumes:
   postgres-data:
