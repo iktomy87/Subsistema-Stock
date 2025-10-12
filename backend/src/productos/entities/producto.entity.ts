@@ -1,6 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, OneToMany, OneToOne } from 'typeorm';
 import { Categoria } from '../../categorias/entities/categoria.entity';
 import { ImagenProducto } from './imagen-producto.entity';
+import { Dimensiones } from './dimensiones.entity';
+import { UbicacionAlmacen } from './ubicacion-almacen.entity';
 
 @Entity('productos')
 export class Producto {
@@ -18,6 +20,12 @@ export class Producto {
 
   @Column({ name: 'stock_disponible', default: 0 })
   stockDisponible: number;
+
+  @OneToOne(() => Dimensiones, dimensiones => dimensiones.producto, {cascade: true})
+  dimensiones: Dimensiones;
+
+  @OneToOne(() => UbicacionAlmacen, ubicacion => ubicacion.producto, {cascade: true})
+  ubicacion: UbicacionAlmacen;
 
   @Column({ name: 'peso_kg', type: 'float', nullable: true })
   pesoKg: number;

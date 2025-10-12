@@ -1,4 +1,7 @@
-import { IsString, IsNumber, IsArray, IsOptional, IsUrl, Min, IsPositive, ArrayNotEmpty, IsInt } from 'class-validator';
+import { IsString, IsNumber, IsArray, IsOptional, IsUrl, Min, IsPositive, ArrayNotEmpty, IsInt, IsNotEmpty, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateDimensionesDto } from './create-dimensiones.dto';
+import { CreateUbicacionAlmacenDto } from './create-ubicacion-almacen.dto';
 
 export class CreateProductoDto {
   @IsString()
@@ -20,6 +23,16 @@ export class CreateProductoDto {
   @Min(0)
   @IsOptional()
   pesoKg?: number;
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => CreateDimensionesDto)
+  dimensiones: CreateDimensionesDto;
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => CreateUbicacionAlmacenDto)
+  ubicacion: CreateUbicacionAlmacenDto;
 
   @IsArray()
   @IsUrl({}, { each: true })
