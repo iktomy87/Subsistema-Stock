@@ -44,6 +44,35 @@ npm run start:dev
 
 ```
 
+## Ejecución con Docker
+
+Para un despliegue rápido y consistente, se proporciona una configuración de Docker Compose que orquesta tanto la API como la base de datos PostgreSQL.
+
+### Prerrequisitos
+*   [Docker](https://docs.docker.com/get-docker/)
+*   [Docker Compose](https://docs.docker.com/compose/install/) (generalmente incluido con Docker Desktop)
+
+### Levantamiento de Servicios
+1.  Asegúrese de que Docker se esté ejecutando en su sistema.
+2.  Desde el directorio raíz del proyecto, ejecute el siguiente comando:
+    ```shell
+    docker compose up -d --build
+    ```
+    Este comando realizará las siguientes acciones:
+    *   Construirá la imagen de la aplicación NestJS (`backend`) basándose en el `backend/Dockerfile`.
+    *   Descargará la imagen de `postgres:15-alpine` para el servicio de base de datos (`db`).
+    *   Creará e iniciará los contenedores para ambos servicios en modo desacoplado (`-d`).
+    *   Las variables de entorno para la conexión a la base de datos se inyectan automáticamente desde `docker-compose.yml` al contenedor del backend.
+    *   Se creará un volumen (`postgres-data`) para persistir los datos de la base de datos.
+
+Una vez finalizado, la API estará accesible en `http://localhost:3000`.
+
+### Detener los Servicios
+Para detener y eliminar los contenedores, redes y volúmenes creados, ejecute:
+```shell
+docker-compose down
+```
+
 ## Ingresar a la interfaz Swagger
 ```
 http://localhost:3000/api
