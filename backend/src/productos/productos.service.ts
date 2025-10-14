@@ -23,6 +23,8 @@ export class ProductosService {
     const query = this.productosRepository.createQueryBuilder('producto')
       .leftJoinAndSelect('producto.imagenes', 'imagenes')
       .leftJoinAndSelect('producto.categorias', 'categorias')
+      .leftJoinAndSelect('producto.dimensiones', 'dimensiones')
+      .leftJoinAndSelect('producto.ubicacion', 'ubicacion')
       .where('producto.activo = :activo', { activo: true });
 
     if (search) {
@@ -71,7 +73,7 @@ export class ProductosService {
   async findOne(id: number): Promise<Producto> {
     const producto = await this.productosRepository.findOne({
       where: { id, activo: true },
-      relations: ['categorias', 'imagenes']
+      relations: ['categorias', 'imagenes', 'dimensiones', 'ubicacion']
     });
 
     if (!producto) {

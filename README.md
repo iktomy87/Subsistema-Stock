@@ -44,6 +44,17 @@ npm run start:dev
 
 ```
 
+### 6. Cargar Datos de Prueba (Seeding)
+
+Para poblar la base de datos con datos iniciales (categorías y productos de ejemplo), puedes ejecutar el siguiente comando desde el directorio `backend`:
+
+```
+npm run seed
+```
+
+Esto limpiará las tablas y cargará un conjunto de datos predefinido para facilitar el desarrollo y las pruebas.
+
+
 ## Ejecución con Docker
 
 Para un despliegue rápido y consistente, se proporciona una configuración de Docker Compose que orquesta tanto la API como la base de datos PostgreSQL.
