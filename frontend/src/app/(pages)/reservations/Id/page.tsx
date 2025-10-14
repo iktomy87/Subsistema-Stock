@@ -1,4 +1,5 @@
-import { getReservation, releaseReservation } from "@/src/lib/api";
+import { getReservation, releaseReservation } from "@/lib/api";
+
 
 export default async function ReservationDetailPage({ params }: { params: { id: string } }) {
     const idReserva = Number(params.id);

@@ -1,4 +1,4 @@
-import { getCategories, deleteCategory } from "@/src/lib/api";
+import { getCategories, deleteCategory } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 

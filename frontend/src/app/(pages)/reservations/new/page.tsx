@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProducts, createReservation } from "@/src/lib/api";
+import { getProducts, createReservation } from "@/lib/api";
 import type { Product } from "@/src/lib/definitions";
 
 export default function NewReservationPage() {
