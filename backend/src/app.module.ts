@@ -4,12 +4,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductosModule } from './productos/productos.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { ReservasModule } from './reservas/reservas.module';
+import { SeedsModule } from './database/seeds/seeds.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // Hace que el módulo esté disponible globalmente
-      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`, // Carga el archivo .env según el entorno
+      envFilePath: '.env', // Carga el archivo .env según el entorno
     }),
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
@@ -26,6 +27,7 @@ import { ReservasModule } from './reservas/reservas.module';
     ProductosModule,
     CategoriasModule,
     ReservasModule,
+    SeedsModule,
   ],
 })
 export class AppModule {}
