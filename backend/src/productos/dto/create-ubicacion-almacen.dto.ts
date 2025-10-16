@@ -1,19 +1,26 @@
-import { IsString, IsNumber, IsInt, IsNotEmpty} from 'class-validator';
+import { IsString, IsNotEmpty, Matches, MaxLength, MinLength} from 'class-validator';
 
 export class CreateUbicacionAlmacenDto {
-  @IsNumber()
-  @IsInt()
-  almacenId: number; 
+  @IsString()
+  @IsNotEmpty()
+  street: string; 
 
   @IsString()
   @IsNotEmpty()
-  estanteria: string;
+  city: string;
 
   @IsString()
   @IsNotEmpty()
-  pasillo: string;
+  state: string;
   
-  @IsNumber()
-  @IsInt()
-  nivel: number;
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(2)
+  country: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^([A-Z]{1}\d{4}[A-Z]{3})$/)
+  postal_code: string;
 }

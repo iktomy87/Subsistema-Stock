@@ -6,17 +6,20 @@ export class UbicacionAlmacen {
 	@PrimaryGeneratedColumn()
 	id: number;
 	
-	@Column({type: 'integer'})
-	almacenId: number;
+	@Column()
+	street: string;
 
 	@Column()
-	pasillo: string;
+	city: string;
 
 	@Column()
-	estanteria: string;
+	state: string;
 
-	@Column({type: 'integer'})
-	nivel: number;
+	@Column()
+	postal_code: string;
+
+	@Column()
+	country: string;
 
 	@OneToOne(() => Producto, producto => producto.ubicacion, { 
 		onDelete: 'CASCADE'
