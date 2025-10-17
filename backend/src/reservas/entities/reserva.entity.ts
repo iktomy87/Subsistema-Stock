@@ -7,7 +7,7 @@ export class Reserva {
   id: number;
 
   @Column({ name: 'id_compra', unique: true })
-  idUsuario: string;
+  idCompra: string;
 
   @Column({ 
     type: 'enum', 
