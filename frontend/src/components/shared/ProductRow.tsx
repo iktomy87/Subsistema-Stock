@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/lib/definitions";
-import { formatCurrency } from "@/lib/definitions";
+import { formatCurrency } from "@/lib/utils";
 import { MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
 
 interface ProductRowProps {

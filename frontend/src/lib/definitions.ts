@@ -22,6 +22,11 @@ export interface Category {
   descripcion?: string | null;
 }
 
+export interface CategoriaInput {
+  nombre: string;
+  descripcion?: string | null;
+}
+
 export interface Product {
   id: number;
   nombre: string;
@@ -35,13 +40,95 @@ export interface Product {
   categorias?: Category[];
 }
 
+export interface ProductoInput {
+  nombre: string;
+  descripcion?: string;
+  precio: number;
+  stockInicial: number;
+  pesoKg?: number;
+  dimensiones?: Dimensiones;
+  ubicacion?: UbicacionAlmacen;
+  imagenes?: ImagenProducto[];
+  categoriaIds?: number[];
+}
+
+export interface ProductoUpdate {
+  nombre?: string;
+  descripcion?: string;
+  precio?: number;
+  stockInicial?: number;
+  pesoKg?: number;
+  dimensiones?: Dimensiones;
+  ubicacion?: UbicacionAlmacen;
+  imagenes?: ImagenProducto[];
+  categoriaIds?: number[];
+}
+
+export interface ProductoCreado {
+  id: number;
+  mensaje: string;
+}
+
+export interface PaginatedProducts {
+  items: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedReservas {
+  items: ReservaCompleta[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ReservaInput {
+  idCompra: string;
+  usuarioId: number;
+  productos: {
+    idProducto: number;
+    cantidad: number;
+  }[];
+}
+
+export interface ReservaOutput {
+  idReserva: number;
+  idCompra: string;
+  usuarioId: number;
+  estado: 'confirmado' | 'pendiente' | 'cancelado';
+  expiresAt: string;
+  fechaCreacion: string;
+}
+
+export interface ReservaCompleta {
+    idReserva: number;
+    idCompra: string;
+    usuarioId: number;
+    estado: 'confirmado' | 'pendiente' | 'cancelado';
+    expiresAt: string;
+    fechaCreacion: string;
+    fechaActualizacion: string;
+    productos: {
+        idProducto: number;
+        nombre: string;
+        cantidad: number;
+        precioUnitario: number;
+    }[];
+}
+
+export interface ActualizarReservaInput {
+    usuarioId: number;
+    estado: 'confirmado' | 'pendiente' | 'cancelado';
+}
+
+export interface CancelacionReservaInput {
+    motivo: string;
+}
+
+
 export const getCategory = (id: number, cats: Category[]) => {
   return cats.find((cat) => cat.id === id);
 };
 
-export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
+

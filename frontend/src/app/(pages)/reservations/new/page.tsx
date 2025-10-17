@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProducts, createReservation } from "@/lib/api";
-import type { Product } from "@/src/lib/definitions";
+import { listarProductos, crearReserva } from "@/lib/api";
+import type { Product } from "@/lib/definitions";
 
 export default function NewReservationPage() {
     const router = useRouter();
@@ -12,7 +12,7 @@ export default function NewReservationPage() {
     const [qty, setQty] = useState<Record<number, number>>({});
 
     useEffect(() => {
-        getProducts({ page: 1, limit: 100 }).then(p => setProducts(p.data));
+        listarProductos(1, 100).then(p => setProducts(p.items));
     }, []);
 
     const submit = async () => {
@@ -20,10 +20,13 @@ export default function NewReservationPage() {
             .filter(([_, c]) => Number(c) > 0)
             .map(([id, c]) => ({ idProducto: Number(id), cantidad: Number(c) }));
 
-        if (!idCompra) return alert("Ingresá idCompra");
-        if (productos.length === 0) return alert("Agregá al menos un producto");
+        if (!idCompra) return alert("Ingrese idCompra");
+        if (productos.length === 0) return alert("Agregue al menos un producto");
 
-        const r = await createReservation({ idCompra, productos });
+        // TODO: Get usuarioId from session
+        const usuarioId = 123;
+
+        const r = await crearReserva({ idCompra, usuarioId, productos });
         router.push(`/reservations/${r.idReserva}`);
     };
 
@@ -48,12 +51,12 @@ export default function NewReservationPage() {
                     {products.map(p => (
                         <tr key={p.id} className="border-t">
                             <td className="p-2">{p.nombre}</td>
-                            <td className="p-2 text-right">{p.stock}</td>
+                            <td className="p-2 text-right">{p.stockDisponible}</td>
                             <td className="p-2 text-right">
                                 <input
                                     type="number"
                                     min={0}
-                                    max={p.stock}
+                                    max={p.stockDisponible}
                                     className="border rounded px-2 py-1 w-24 text-right"
                                     value={qty[p.id] ?? 0}
                                     onChange={(e) => setQty(q => ({ ...q, [p.id]: Number(e.target.value) }))}
