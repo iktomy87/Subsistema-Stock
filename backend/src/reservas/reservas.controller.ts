@@ -17,7 +17,7 @@ export class ReservaController {
     return this.reservaService.liberar(liberacionInput);
   }
 
-  @Get('reservas/:idReserva')
+  @Get('/:idReserva')
   async consultarReserva(@Param('idReserva', ParseIntPipe) idReserva: number) {
     return this.reservaService.consultarReserva(idReserva);
   }

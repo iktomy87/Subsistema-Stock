@@ -19,58 +19,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockProducts } from '@/lib/mock';
-import { mockCategories } from '@/lib/mock';
-import { Product } from '@/lib/definitions';
+import { listarProductos, getCategories, eliminarProducto } from '@/lib/api';
+import { Product, Category } from '@/lib/definitions';
 import { ProductRow } from '@/components/shared/ProductRow';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
-
-const ITEMS_PER_PAGE = 10;
 
 const ProductsPage = () => {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const categoryId = categoryFilter !== 'all' ? parseInt(categoryFilter) : undefined;
+      const paginatedProducts = await listarProductos(currentPage, 10, searchTerm, categoryId);
+      setProducts(paginatedProducts.items);
+      setTotalPages(Math.ceil(paginatedProducts.total / 10));
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // Simulate API loading
-    setTimeout(() => {
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
-      setLoading(false);
-    }, 1500);
+    fetchProducts();
+  }, [currentPage, searchTerm, categoryFilter]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
   }, []);
-
-  useEffect(() => {
-    let updatedProducts = products;
-
-    if (searchTerm) {
-      updatedProducts = updatedProducts.filter((product) =>
-        product.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (categoryFilter !== 'all') {
-      updatedProducts = updatedProducts.filter((product) =>
-        product.categorias?.some(cat => cat.id === parseInt(categoryFilter))
-      );
-    }
-
-    setFilteredProducts(updatedProducts);
-    setCurrentPage(1);
-  }, [searchTerm, categoryFilter, products]);
-
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -81,7 +74,7 @@ const ProductsPage = () => {
   };
 
   const handleEdit = (product: Product) => {
-    console.log('Edit:', product);
+    router.push(`/products/${product.id}/edit`);
   };
 
   const handleDelete = (product: Product) => {
@@ -89,13 +82,14 @@ const ProductsPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedProduct) {
-      const updatedProducts = products.filter(
-        (p) => p.id !== selectedProduct.id
-      );
-      setProducts(updatedProducts);
-      setFilteredProducts(updatedProducts);
+      try {
+        await eliminarProducto(selectedProduct.id);
+        fetchProducts(); // Refetch products after deletion
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
       setIsModalOpen(false);
       setSelectedProduct(null);
     }
@@ -129,7 +123,7 @@ const ProductsPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las categorías</SelectItem>
-              {mockCategories.map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category.id} value={String(category.id)}>
                   {category.nombre}
                 </SelectItem>
@@ -137,7 +131,7 @@ const ProductsPage = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button>Agregar Producto</Button>
+        <Button onClick={() => router.push('/products/new')}>Agregar Producto</Button>
       </div>
       <div className="rounded-md border">
         <Table>
@@ -157,8 +151,8 @@ const ProductsPage = () => {
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-            ) : paginatedProducts.length > 0 ? (
-              paginatedProducts.map((product) => (
+            ) : products.length > 0 ? (
+              products.map((product) => (
                 <ProductRow
                   key={product.id}
                   product={product}

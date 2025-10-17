@@ -23,7 +23,7 @@ import { PaginatedResponse } from './interfaces/pagination.interface';
 export class ProductosController {
   constructor(private readonly productosService: ProductosService) {}
 
-  @Get()
+  @Get('/')
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -38,7 +38,7 @@ export class ProductosController {
     return this.productosService.findAll(pageNum, limitNum, search, categoriaIdNum);
   }
 
-  @Get(':id')
+  @Get('/:id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Producto> {
 
     return this.productosService.findOne(id);

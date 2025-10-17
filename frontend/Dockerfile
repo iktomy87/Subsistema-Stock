@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # Exponer el puerto en el que se ejecuta la aplicación Next.js (por defecto 3000)
-EXPOSE 3000
+EXPOSE 8080
 
 # Comando para iniciar la aplicación en modo de desarrollo
 CMD ["npm", "run", "dev"]

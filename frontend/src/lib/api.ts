@@ -1,68 +1,171 @@
-import { PaginatedProducts, Category, Product, ReservaCreateInput, ReservaInfo } from './definitions';
+import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000/api';
+const API_BASE_URL = typeof window === 'undefined' 
+    ? process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000' 
+    : '/api';
+
+async function fetcher<T>(url: string, options: RequestInit = {}): Promise<T> {
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`HTTP error! status: ${response.status}`, errorBody);
+            throw new Error(`Error en la petición: ${response.statusText}`);
+        }
+
+        if (response.status === 204) {
+            return undefined as T;
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error("Error en fetcher:", error);
+        throw error;
+    }
+}
+
 
 // ===== Productos =====
-export async function getProduct(id: number): Promise<Product> {
+export async function listarProductos(
+    page: number = 1,
+    limit: number = 10,
+    q: string = '',
+    categoriaId?: number
+): Promise<PaginatedProducts> {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+    });
+
+    if (q) {
+        params.append('q', q);
+    }
+
+    if (categoriaId) {
+        params.append('categoriaId', categoriaId.toString());
+    }
+    
+    // Usamos <any> porque la estructura de la respuesta del backend puede variar.
+    const data = await fetcher<any>(`${API_BASE_URL}/productos?${params.toString()}`, { cache: 'no-store' });
+
+    // Adaptamos la estructura del backend a nuestra interfaz PaginatedProducts.
+    // Esto nos da flexibilidad si el backend cambia.
+    return {
+        items: data.items ?? data.data ?? [],
+        total: data.total ?? data.meta?.totalItems ?? 0,
+        page: data.page ?? data.meta?.currentPage ?? page,
+        limit: data.limit ?? data.meta?.itemsPerPage ?? limit,
+    };
+}
+
+
+export async function obtenerProductoPorId(id: number): Promise<Product> {
     return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, { cache: 'no-store' });
 }
-export async function createProduct(body: Partial<Product>) {
-    return fetcher<Product>(`${API_BASE_URL}/productos`, {
+
+export async function crearProducto(body: ProductoInput): Promise<ProductoCreado> {
+    return fetcher<ProductoCreado>(`${API_BASE_URL}/productos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
-export async function updateProduct(id: number, body: Partial<Product>) {
+
+export async function actualizarProducto(id: number, body: ProductoUpdate): Promise<Product> {
     return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
-export async function deleteProduct(id: number) {
+
+export async function eliminarProducto(id: number) {
     return fetcher<void>(`${API_BASE_URL}/productos/${id}`, { method: 'DELETE' });
 }
 
-// ===== Categor�as =====
-export async function createCategory(body: Partial<Category>) {
+// ===== Categorías =====
+export async function getCategories(): Promise<Category[]> {
+    return fetcher<Category[]>(`${API_BASE_URL}/categorias`, { cache: 'no-store' });
+}
+
+export async function obtenerCategoriaPorId(id: number): Promise<Category> {
+    return fetcher<Category>(`${API_BASE_URL}/categorias/${id}`, { cache: 'no-store' });
+}
+
+export async function crearCategoria(body: CategoriaInput): Promise<Category> {
     return fetcher<Category>(`${API_BASE_URL}/categorias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
-export async function updateCategory(id: number, body: Partial<Category>) {
+
+export async function actualizarCategoria(id: number, body: CategoriaInput): Promise<Category> {
     return fetcher<Category>(`${API_BASE_URL}/categorias/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
-export async function deleteCategory(id: number) {
+
+export async function eliminarCategoria(id: number) {
     return fetcher<void>(`${API_BASE_URL}/categorias/${id}`, { method: 'DELETE' });
 }
 
-// ===== Reservas (rutas reales del backend) =====
-export async function createReservation(input: ReservaCreateInput) {
-    return fetcher<ReservaInfo>(`${API_BASE_URL}/reservas/reservar`, {
+// ===== Reservas =====
+export async function listarReservas(
+    usuarioId: number,
+    page: number = 1,
+    limit: number = 10,
+    estado?: 'confirmado' | 'pendiente' | 'cancelado'
+): Promise<PaginatedReservas> {
+    const params = new URLSearchParams({
+        usuarioId: usuarioId.toString(),
+        page: page.toString(),
+        limit: limit.toString(),
+    });
+    if (estado) {
+        params.append('estado', estado);
+    }
+    
+    const data = await fetcher<any>(`${API_BASE_URL}/reservas?${params.toString()}`, { cache: 'no-store' });
+
+    return {
+        items: data.items ?? data.data ?? [],
+        total: data.total ?? data.meta?.totalItems ?? 0,
+        page: data.page ?? data.meta?.currentPage ?? page,
+        limit: data.limit ?? data.meta?.itemsPerPage ?? limit,
+    };
+}
+
+export async function obtenerReservaPorId(idReserva: number): Promise<ReservaCompleta> {
+    const params = new URLSearchParams({
+        // usuarioId: usuarioId.toString(),
+    });
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' });
+}
+
+export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> {
+    return fetcher<ReservaOutput>(`${API_BASE_URL}/reservas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
     });
 }
-export async function getReservation(idReserva: number) {
-    return fetcher<ReservaInfo>(`${API_BASE_URL}/reservas/reservas/${idReserva}`, { cache: 'no-store' });
-}
-export async function releaseReservation(idReserva: number) {
-    // El back exige body con idReserva + estado + expiresAt
-    return fetcher<ReservaInfo>(`${API_BASE_URL}/reservas/liberar`, {
-        method: 'POST',
+
+export async function actualizarReserva(idReserva: number, input: ActualizarReservaInput): Promise<ReservaCompleta> {
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            idReserva,
-            estado: "LIBERADA",
-            expiresAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(input),
+    });
+}
+
+export async function cancelarReserva(idReserva: number, input: CancelacionReservaInput): Promise<void> {
+    return fetcher<void>(`${API_BASE_URL}/reservas/${idReserva}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
     });
 }

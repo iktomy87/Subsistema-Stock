@@ -1,9 +1,11 @@
-import { getReservation, releaseReservation } from "@/lib/api";
-
+import { obtenerReservaPorId, cancelarReserva } from "@/lib/api";
+import { redirect } from "next/navigation";
 
 export default async function ReservationDetailPage({ params }: { params: { id: string } }) {
     const idReserva = Number(params.id);
-    const info = await getReservation(idReserva);
+    // TODO: Get usuarioId from session
+    const usuarioId = 2;
+    const info = await obtenerReservaPorId(idReserva);
 
     return (
         <section className="space-y-4">
@@ -13,8 +15,8 @@ export default async function ReservationDetailPage({ params }: { params: { id: 
 
             <form action={async () => {
                 "use server";
-                await releaseReservation(idReserva);
-                return Response.redirect(`/reservations/${idReserva}`);
+                await cancelarReserva(idReserva, { motivo: 'Cancelado desde la UI' });
+                redirect(`/reservations`);
             }}>
                 <button className="border px-3 py-1 rounded">Liberar</button>
             </form>
