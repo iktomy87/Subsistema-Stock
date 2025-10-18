@@ -63,7 +63,6 @@ export class SeedsService {
           altoCm: 1.62,
         },
         ubicacion: {
-          almacenId: 1,
           pasillo: 'A',
           estanteria: '12',
           nivel: 3,
@@ -88,7 +87,6 @@ export class SeedsService {
           altoCm: 1,
         },
         ubicacion: {
-          almacenId: 2,
           pasillo: 'C',
           estanteria: '5',
           nivel: 1,
@@ -110,7 +108,6 @@ export class SeedsService {
           altoCm: 1.3,
         },
         ubicacion: {
-          almacenId: 1,
           pasillo: 'B',
           estanteria: '8',
           nivel: 5,

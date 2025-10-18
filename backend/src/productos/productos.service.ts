@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Like } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Producto } from './entities/producto.entity';
 import { Categoria } from '../categorias/entities/categoria.entity';
-import { ImagenProducto } from './entities/imagen-producto.entity';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { PaginatedResponse } from './interfaces/pagination.interface';
+import { Dimensiones } from './entities/dimensiones.entity';
+import { UbicacionAlmacen } from './entities/ubicacion-almacen.entity';
+import { ImagenProducto } from './entities/imagen-producto.entity';
 
 @Injectable()
 export class ProductosService {
@@ -15,8 +17,6 @@ export class ProductosService {
     private productosRepository: Repository<Producto>,
     @InjectRepository(Categoria)
     private categoriasRepository: Repository<Categoria>,
-    @InjectRepository(ImagenProducto)
-    private imagenesRepository: Repository<ImagenProducto>,
   ) {}
 
   async findAll(page?: number, limit?: number, search?: string, categoriaId?: number): Promise<PaginatedResponse<Producto>> {
@@ -24,8 +24,7 @@ export class ProductosService {
       .leftJoinAndSelect('producto.imagenes', 'imagenes')
       .leftJoinAndSelect('producto.categorias', 'categorias')
       .leftJoinAndSelect('producto.dimensiones', 'dimensiones')
-      .leftJoinAndSelect('producto.ubicacion', 'ubicacion')
-      .where('producto.activo = :activo', { activo: true });
+      .leftJoinAndSelect('producto.ubicacion', 'ubicacion');
 
     if (search) {
       query.andWhere('producto.nombre LIKE :search', { search: `%${search}%` });
@@ -37,7 +36,6 @@ export class ProductosService {
 
     query.orderBy('producto.id', 'DESC');
 
-    // Paginación opcional
     const shouldPaginate = page !== undefined && limit !== undefined;
     
     if (shouldPaginate) {
@@ -46,7 +44,6 @@ export class ProductosService {
       const skip = (validatedPage - 1) * validatedLimit;
       
       query.skip(skip).take(validatedLimit);
-
       const [data, total] = await query.getManyAndCount();
 
       return {
@@ -59,20 +56,14 @@ export class ProductosService {
         },
       };
     } else {
-      // Sin paginación - devolver todos los resultados
       const data = await query.getMany();
-      const total = data.length;
-      
-      return {
-        data,
-        // meta es opcional, así que no se incluye cuando no hay paginación
-      };
+      return { data };
     }
-}
+  }
 
   async findOne(id: number): Promise<Producto> {
     const producto = await this.productosRepository.findOne({
-      where: { id, activo: true },
+      where: { id },
       relations: ['categorias', 'imagenes', 'dimensiones', 'ubicacion']
     });
 
@@ -84,43 +75,32 @@ export class ProductosService {
   }
 
   async create(createProductoDto: CreateProductoDto): Promise<{ id: number; mensaje: string }> {
-    const { categoriaIds, imagenes, ...productoData } = createProductoDto;
+    const { categoriaIds, imagenes: imagenesUrls, stockInicial, ...productoData } = createProductoDto;
 
-    // Validar que las categorías existen
+    let categorias: Categoria[] = [];
     if (categoriaIds && categoriaIds.length > 0) {
-      const categoriasCount = await this.categoriasRepository.count({
-        where: { id: In(categoriaIds) }
-      });
-      
-      if (categoriasCount !== categoriaIds.length) {
+      categorias = await this.categoriasRepository.findBy({ id: In(categoriaIds) });
+      if (categorias.length !== categoriaIds.length) {
         throw new BadRequestException('Una o más categorías no existen');
       }
     }
 
-    const producto = this.productosRepository.create({
+    const nuevoProducto = this.productosRepository.create({
       ...productoData,
-      stockDisponible: productoData.stockInicial,
+      stockDisponible: stockInicial,
+      categorias,
+      // TypeORM creará las entidades relacionadas gracias a `cascade: true`
+      dimensiones: productoData.dimensiones as unknown as Dimensiones,
+      ubicacion: productoData.ubicacion as unknown as UbicacionAlmacen,
+      imagenes: imagenesUrls?.map(url => ({ url, esPrincipal: false })) as unknown as ImagenProducto[] || [],
     });
 
-    // Asignar categorías si se proporcionan
-    if (categoriaIds && categoriaIds.length > 0) {
-      const categorias = await this.categoriasRepository.findBy({
-        id: In(categoriaIds)
-      });
-      producto.categorias = categorias;
+    // Opcional: marcar la primera imagen como principal si no se especifica
+    if (nuevoProducto.imagenes.length > 0) {
+      nuevoProducto.imagenes[0].esPrincipal = true;
     }
 
-    const productoGuardado = await this.productosRepository.save(producto);
-
-    if (imagenes && imagenes.length > 0) {
-      const imagenesEntities = imagenes.map(url => 
-        this.imagenesRepository.create({
-          url: url, 
-          producto: productoGuardado 
-        })
-      );
-      await this.imagenesRepository.save(imagenesEntities);
-    }
+    const productoGuardado = await this.productosRepository.save(nuevoProducto);
 
     return {
       id: productoGuardado.id,
@@ -129,70 +109,70 @@ export class ProductosService {
   }
 
   async update(id: number, updateProductoDto: UpdateProductoDto): Promise<Producto> {
-    const producto = await this.findOne(id);
+    const { categoriaIds, imagenes: imagenesUrls, stockInicial, ...productoData } = updateProductoDto;
     
-    const { categoriaIds, imagenes, ...productoData } = updateProductoDto;
+    const producto = await this.productosRepository.findOne({
+        where: { id },
+        relations: ['dimensiones', 'ubicacion', 'imagenes']
+    });
 
-    // Validar categorías si se proporcionan
+    if (!producto) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+
+    // Actualizar datos básicos y relaciones anidadas
+    const updatedPayload = {
+        ...producto,
+        ...productoData,
+        dimensiones: {
+            ...producto.dimensiones,
+            ...productoData.dimensiones,
+        },
+        ubicacion: {
+            ...producto.ubicacion,
+            ...productoData.ubicacion,
+        }
+    };
+
+    if (stockInicial !== undefined) {
+      updatedPayload.stockDisponible = stockInicial;
+    }
+
     if (categoriaIds !== undefined) {
       if (categoriaIds.length > 0) {
-        const categoriasCount = await this.categoriasRepository.count({
-          where: { id: In(categoriaIds) }
-        });
-        
-        if (categoriasCount !== categoriaIds.length) {
+        const categorias = await this.categoriasRepository.findBy({ id: In(categoriaIds) });
+        if (categorias.length !== categoriaIds.length) {
           throw new BadRequestException('Una o más categorías no existen');
         }
-        
-        const categorias = await this.categoriasRepository.findBy({ id: In(categoriaIds) });
-        producto.categorias = categorias;
+        updatedPayload.categorias = categorias;
       } else {
-        producto.categorias = [];
+        updatedPayload.categorias = [];
       }
     }
 
-    // Actualizar datos básicos
-    Object.assign(producto, productoData);
-
-    // Actualizar stock disponible si se modifica stockInicial
-    if (updateProductoDto.stockInicial !== undefined) {
-      producto.stockDisponible = updateProductoDto.stockInicial;
+    if (imagenesUrls !== undefined) {
+        // Reemplazar imágenes
+        updatedPayload.imagenes = imagenesUrls.map(url => ({ url, esPrincipal: false })) as unknown as ImagenProducto[];
+        if (updatedPayload.imagenes.length > 0) {
+            updatedPayload.imagenes[0].esPrincipal = true;
+        }
     }
 
-    await this.productosRepository.save(producto);
-
-    if (imagenes !== undefined) {
-      // Eliminar imágenes existentes
-      await this.imagenesRepository.delete({ producto: { id: id } });
-      
-      // Crear nuevas imágenes
-      if (imagenes.length > 0) {
-        const imagenesEntities = imagenes.map(url => 
-          this.imagenesRepository.create({
-            url: url,
-            producto: producto
-          })
-        );
-        await this.imagenesRepository.save(imagenesEntities);
-      }
-    }
-
-    return this.findOne(id);
+    const updatedProduct = await this.productosRepository.save(updatedPayload);
+    return updatedProduct;
   }
 
   async remove(id: number): Promise<void> {
-    const producto = await this.findOne(id);
-    producto.activo = false;
-    await this.productosRepository.save(producto);
+    const result = await this.productosRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
   }
 
-  // Método para verificar stock y reservar
+  // Métodos de stock (sin cambios)
   async verificarStock(productos: Array<{ idProducto: number; cantidad: number }>): Promise<boolean> {
     for (const item of productos) {
-      const producto = await this.productosRepository.findOne({
-        where: { id: item.idProducto, activo: true }
-      });
-
+      const producto = await this.productosRepository.findOneBy({ id: item.idProducto });
       if (!producto || producto.stockDisponible < item.cantidad) {
         return false;
       }
@@ -202,21 +182,13 @@ export class ProductosService {
 
   async reservarStock(productos: Array<{ idProducto: number; cantidad: number }>): Promise<void> {
     for (const item of productos) {
-      await this.productosRepository.decrement(
-        { id: item.idProducto },
-        'stockDisponible',
-        item.cantidad
-      );
+      await this.productosRepository.decrement({ id: item.idProducto }, 'stockDisponible', item.cantidad);
     }
   }
 
   async liberarStock(productos: Array<{ idProducto: number; cantidad: number }>): Promise<void> {
     for (const item of productos) {
-      await this.productosRepository.increment(
-        { id: item.idProducto },
-        'stockDisponible',
-        item.cantidad
-      );
+      await this.productosRepository.increment({ id: item.idProducto }, 'stockDisponible', item.cantidad);
     }
   }
 }
