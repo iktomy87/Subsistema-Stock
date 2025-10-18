@@ -9,6 +9,9 @@ export class Reserva {
   @Column({ name: 'id_compra', unique: true })
   idUsuario: string;
 
+  @Column()
+  usuarioId: number;
+
   @Column({ 
     type: 'enum', 
     enum: ['confirmado', 'pendiente', 'cancelado'],

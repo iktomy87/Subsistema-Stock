@@ -1,4 +1,4 @@
-import { IsString, IsArray, ValidateNested, IsInt, Min } from 'class-validator';
+import { IsString, IsArray, ValidateNested, IsInt, Min, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ProductoReservaDto {
@@ -13,7 +13,11 @@ class ProductoReservaDto {
 
 export class ReservaInputDto {
   @IsString()
+  @IsNotEmpty()
   idCompra: string;
+
+  @IsInt()
+  usuarioId: number;
 
   @IsArray()
   @ValidateNested({ each: true })

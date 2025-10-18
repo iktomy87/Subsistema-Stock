@@ -140,7 +140,19 @@ describe('ProductosService', () => {
     it('debería retornar un producto existente', async () => {
       const mockProducto = { 
         id: 1, 
-        nombre: 'Producto Test', 
+        nombre: 'Producto Test',
+        dimensiones: {
+          largoCm: 24.02,
+          anchoCm: 12.5,
+          altoCm: 2.22,
+        },
+        ubicacion: {
+          street: "25 de Mayo",
+          city: "Resistencia",
+          state: "Chaco",
+          postal_code: "H3500", 
+          country: "AR"
+        }, 
         activo: true,
         categorias: [],
         imagenes: []
@@ -153,7 +165,7 @@ describe('ProductosService', () => {
       expect(result).toEqual(mockProducto);
       expect(mockProductoRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1, activo: true },
-        relations: ['categorias', 'imagenes']
+        relations: ['categorias', 'imagenes', 'dimensiones', 'ubicacion',]
       });
     });
 

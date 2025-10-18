@@ -4,6 +4,7 @@ import { ReservaController } from '../../reservas.controller';
 import { ReservasService } from '../../reservas.service';
 import { ReservaInputDto } from '../../dto/create-reserva.dto';
 import { UpdateReservaDto } from '../../dto/update-reserva.dto';
+import { CancelacionReservaInputDto } from 'src/reservas/dto/delete-reserva.dto';
 
 describe('ReservaController', () => {
   let controller: ReservaController;
@@ -13,6 +14,8 @@ describe('ReservaController', () => {
     reservar: jest.fn(),
     liberar: jest.fn(),
     consultarReserva: jest.fn(),
+    actualizar: jest.fn(),
+    consultarReservasDeUsuario: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -33,14 +36,55 @@ describe('ReservaController', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
+    
+  describe('GET /', () => {
+    it('debería retornar lista de reservas de un usuario con paginación', async () => {
+      const usuarioId = 1;
+      const estado = 'pendiente';
 
-  describe('POST /reservar', () => {
+      const mockResponse = { data: [], meta: { total: 0 } };
+      mockReservasService.consultarReservasDeUsuario.mockResolvedValue(mockResponse);
+
+      const result = await controller.consultarReservasDeUsuario(usuarioId, '1', '5', estado);
+
+      expect(result).toEqual(mockResponse);
+      expect(service.consultarReservasDeUsuario).toHaveBeenCalledTimes(1);
+      expect(service.consultarReservasDeUsuario).toHaveBeenCalledWith(usuarioId, {
+        page: 1, 
+        limit: 5, 
+        estado: estado});
+    });
+
+    it('debería retornar todas las reservas de un usuario cuando no se pagina', async () => {
+      const usuarioId = 1;
+
+      const mockResponse = { data: [] };
+      mockReservasService.consultarReservasDeUsuario.mockResolvedValue(mockResponse);
+
+      const result = await controller.consultarReservasDeUsuario(usuarioId,
+        undefined,
+        undefined,
+        undefined
+      );
+
+      expect(result).toEqual(mockResponse);
+      expect(service.consultarReservasDeUsuario).toHaveBeenCalledTimes(1);
+      expect(service.consultarReservasDeUsuario).toHaveBeenCalledWith(usuarioId, {
+        page: undefined,
+        limit: undefined,
+        estado: undefined,
+      });
+    });
+  });
+
+  describe('POST /', () => {
     it('debería llamar al servicio de reservar con los datos correctos', async () => {
       const reservaInput: ReservaInputDto = {
         idCompra: 'compra-123',
+        usuarioId: 1,
         productos: [{ idProducto: 1, cantidad: 2 }],
       };
-      const mockResponse = { idReserva: 1, estado: 'confirmado', expiresAt: new Date() };
+      const mockResponse = { idReserva: 1, usuarioId: 1, estado: 'confirmado', expiresAt: new Date() };
 
       mockReservasService.reservar.mockResolvedValue(mockResponse);
 
@@ -51,21 +95,22 @@ describe('ReservaController', () => {
     });
   });
 
-  describe('POST /liberar', () => {
+  describe('DELETE /:idReserva', () => {
     it('debería llamar al servicio de liberar con los datos correctos', async () => {
-      const liberacionInput: UpdateReservaDto = { idReserva: 1 };
+      const idReserva = 1;
+      const liberacionInput: CancelacionReservaInputDto = { motivo: 'Me arrepentí' };
       const mockResponse = { mensaje: 'Stock liberado exitosamente' };
 
       mockReservasService.liberar.mockResolvedValue(mockResponse);
 
-      const result = await controller.liberar(liberacionInput);
+      const result = await controller.liberar(idReserva, liberacionInput);
 
       expect(result).toEqual(mockResponse);
-      expect(service.liberar).toHaveBeenCalledWith(liberacionInput);
+      expect(service.liberar).toHaveBeenCalledWith(idReserva, liberacionInput);
     });
   });
 
-  describe('GET /reservas/:idReserva', () => {
+  describe('GET /:idReserva', () => {
     it('debería llamar al servicio de consultarReserva con el ID correcto', async () => {
       const mockResponse = { idReserva: 1, estado: 'confirmado', expiresAt: new Date() };
 
@@ -75,6 +120,24 @@ describe('ReservaController', () => {
 
       expect(result).toEqual(mockResponse);
       expect(service.consultarReserva).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('PATCH /:idReserva', () => {
+    it('debería llamar al servicio de actualizar con el ID correcto', async () => {
+      const idReserva = 1;
+      const actualizacionInput: UpdateReservaDto = {
+        usuarioId: 1,
+        estado: 'confirmado'
+      }
+      const mockResponse = { id: 1, ...actualizacionInput };
+
+      mockReservasService.actualizar.mockResolvedValue(mockResponse);
+
+      const result = await controller.update(idReserva, actualizacionInput);
+
+      expect(result).toEqual(mockResponse);
+      expect(service.actualizar).toHaveBeenCalledWith(idReserva, actualizacionInput);
     });
   });
 });
