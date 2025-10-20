@@ -90,9 +90,9 @@ export class ProductosService {
       stockDisponible: stockInicial,
       categorias,
       // TypeORM creará las entidades relacionadas gracias a `cascade: true`
-      dimensiones: productoData.dimensiones as unknown as Dimensiones,
-      ubicacion: productoData.ubicacion as unknown as UbicacionAlmacen,
-      imagenes: imagenesUrls?.map(url => ({ url, esPrincipal: false })) as unknown as ImagenProducto[] || [],
+      dimensiones: productoData.dimensiones,
+      ubicacion: productoData.ubicacion,
+      imagenes: imagenesUrls?.map(url => ({ url, esPrincipal: false })) || [],
     });
 
     // Opcional: marcar la primera imagen como principal si no se especifica

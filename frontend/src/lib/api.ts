@@ -1,7 +1,7 @@
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
 const API_BASE_URL = typeof window === 'undefined' 
-    ? process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000' 
+    ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000' 
     : '/api';
 
 async function fetcher<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -143,7 +143,7 @@ export async function obtenerReservaPorId(idReserva: number): Promise<ReservaCom
     const params = new URLSearchParams({
         // usuarioId: usuarioId.toString(),
     });
-    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' });
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' });
 }
 
 export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> {
