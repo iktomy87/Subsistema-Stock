@@ -22,5 +22,5 @@ export class CreateUbicacionAlmacenDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^([A-Z]{1}\d{4}[A-Z]{3})$/)
-  postal_code: string;
+  postalCode: string;
 }

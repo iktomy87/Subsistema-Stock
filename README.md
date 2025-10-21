@@ -76,7 +76,19 @@ Para un despliegue rápido y consistente, se proporciona una configuración de D
     *   Las variables de entorno para la conexión a la base de datos se inyectan automáticamente desde `docker-compose.yml` al contenedor del backend.
     *   Se creará un volumen (`postgres-data`) para persistir los datos de la base de datos.
 
-Una vez finalizado, la API estará accesible en `http://localhost:3000`.
+Una vez finalizado, el backend estará accesible en `http://localhost:3000` y el frontend en 'http://localhost:8000'.
+
+Al iniciar, el contenedor del backend ejecuta automáticamente el script entrypoint.sh. Este script corre el comando npm run migration:run antes de iniciar la aplicación. Esto asegura que tu base de datos (stock_db) siempre tenga el esquema y las tablas más recientes.
+
+### Seeding (Poblar la Base de Datos)
+Este paso es manual y se hace una sola vez.
+
+Después de que los contenedores estén corriendo y las tablas se hayan creado, debes ejecutar el script de seeding para poblar la base de datos con datos de prueba (categorías, productos, etc.).
+
+Ejecuta el siguiente comando en tu terminal:
+```
+docker-compose exec backend npm run seed
+```
 
 ### Detener los Servicios
 Para detener y eliminar los contenedores, redes y volúmenes creados, ejecute:

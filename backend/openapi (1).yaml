@@ -711,16 +711,32 @@ components:
 
     UbicacionAlmacen:
       type: object
-      description: "Ubicación física del producto en el almacén."
+      description: "Ubicación física del producto en el almacén. Coincide con la estructura de dirección de la API de logística."
+      required: [street, city, state, postal_code, country]
       properties:
-        almacenId:
-          type: integer
-        pasillo:
+        street:
           type: string
-        estanteria:
+          description: "Calle y número del almacén."
+          example: "Av. Vélez Sársfield 123"
+        city:
           type: string
-        nivel:
-          type: integer
+          description: "Ciudad donde se encuentra el almacén."
+          example: "Resistencia"
+        state:
+          type: string
+          description: "Provincia donde se encuentra el almacén."
+          example: "Chaco"
+        postal_code:
+          type: string
+          description: "Código postal del almacén (formato CPA)."
+          pattern: '^([A-Z]{1}\d{4}[A-Z]{3})$'
+          example: "H3500ABC"
+        country:
+          type: string
+          description: "Código de país (ISO 3166-1 alfa-2)."
+          minLength: 2
+          maxLength: 2
+          example: "AR"
 
     ErrorResponse:
       type: object

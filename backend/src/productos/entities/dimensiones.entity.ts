@@ -18,6 +18,5 @@ export class Dimensiones {
 	@OneToOne(() => Producto, producto => producto.dimensiones, {
 		onDelete: 'CASCADE'
 	})
-	@JoinColumn({name: 'producto_id'})
 	producto: Producto;
 }

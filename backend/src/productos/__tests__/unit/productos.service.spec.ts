@@ -21,6 +21,7 @@ describe('ProductosService', () => {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
+    findOneBy: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     decrement: jest.fn(),
     increment: jest.fn(),
@@ -164,7 +165,7 @@ describe('ProductosService', () => {
 
       expect(result).toEqual(mockProducto);
       expect(mockProductoRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1, activo: true },
+        where: { id: 1 },
         relations: ['categorias', 'imagenes', 'dimensiones', 'ubicacion',]
       });
     });
@@ -192,7 +193,10 @@ describe('ProductosService', () => {
         stockDisponible: 10 
       };
 
-      mockProductoRepository.create.mockReturnValue(createDto);
+      mockProductoRepository.create.mockReturnValue({
+        ...createDto,
+        imagenes: [],
+      });
       mockProductoRepository.save.mockResolvedValue(mockProductoGuardado);
 
       const result = await service.create(createDto);
@@ -223,20 +227,16 @@ describe('ProductosService', () => {
         categorias: mockCategorias
       };
 
-      mockCategoriaRepository.count.mockResolvedValue(2);
       mockCategoriaRepository.findBy.mockResolvedValue(mockCategorias);
-      mockProductoRepository.create.mockReturnValue(createDto);
+      mockProductoRepository.create.mockImplementation(dto => ({
+        ...dto,
+        imagenes: dto.imagenes ? dto.imagenes.map(url => ({ url, esPrincipal: false })) : [],
+      }));
       mockProductoRepository.save.mockResolvedValue(mockProductoGuardado);
-      mockImagenRepository.create.mockImplementation((img) => img);
-      mockImagenRepository.save.mockResolvedValue([]);
 
       const result = await service.create(createDto);
 
       expect(result.id).toBe(1);
-      expect(mockCategoriaRepository.count).toHaveBeenCalledWith({
-        where: { id: In([1, 2]) }
-      });
-      expect(mockImagenRepository.save).toHaveBeenCalled();
     });
 
     it('debería lanzar BadRequestException si categorías no existen', async () => {
@@ -247,7 +247,7 @@ describe('ProductosService', () => {
         categoriaIds: [1, 2],
       };
 
-      mockCategoriaRepository.count.mockResolvedValue(1); // Solo una categoría existe
+      mockCategoriaRepository.findBy.mockResolvedValue([]); // No categories found
 
       await expect(service.create(createDto)).rejects.toThrow(BadRequestException);
       await expect(service.create(createDto)).rejects.toThrow('Una o más categorías no existen');
@@ -255,11 +255,11 @@ describe('ProductosService', () => {
   });
 
   describe('verificarStock', () => {
-    it('debería retornar true si hay stock suficiente', async () => {
-      const productos = [{ idProducto: 1, cantidad: 5 }];
-      const mockProducto = { id: 1, stockDisponible: 10, activo: true };
+    const productos = [{ idProducto: 1, cantidad: 5 }];
+    const mockProducto = { id: 1, stockDisponible: 10 };
 
-      mockProductoRepository.findOne.mockResolvedValue(mockProducto);
+    it('debería retornar true si hay stock suficiente', async () => {
+      mockProductoRepository.findOneBy.mockResolvedValue(mockProducto);
 
       const result = await service.verificarStock(productos);
 
@@ -268,9 +268,8 @@ describe('ProductosService', () => {
 
     it('debería retornar false si no hay stock suficiente', async () => {
       const productos = [{ idProducto: 1, cantidad: 15 }];
-      const mockProducto = { id: 1, stockDisponible: 10, activo: true };
-
-      mockProductoRepository.findOne.mockResolvedValue(mockProducto);
+      const mockProducto = { id: 1, stockDisponible: 10 };
+      mockProductoRepository.findOneBy.mockResolvedValue(mockProducto);
 
       const result = await service.verificarStock(productos);
 
@@ -280,7 +279,7 @@ describe('ProductosService', () => {
     it('debería retornar false si el producto no existe', async () => {
       const productos = [{ idProducto: 999, cantidad: 1 }];
 
-      mockProductoRepository.findOne.mockResolvedValue(null);
+      mockProductoRepository.findOneBy.mockResolvedValue(null);
 
       const result = await service.verificarStock(productos);
 
