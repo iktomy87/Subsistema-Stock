@@ -5,6 +5,8 @@ import { ProductosModule } from './productos/productos.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { ReservasModule } from './reservas/reservas.module';
 import { SeedsModule } from './database/seeds/seeds.module';
+import { AuthModule } from './auth/auth.module';
+import { TestAuthModule } from './auth/test-auth.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { SeedsModule } from './database/seeds/seeds.module';
     CategoriasModule,
     ReservasModule,
     SeedsModule,
+    AuthModule,
+    TestAuthModule,
   ],
 })
 export class AppModule {}

@@ -10,20 +10,26 @@ import {
   ParseIntPipe, 
   DefaultValuePipe,
   HttpCode,
-  HttpStatus 
+  HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
 import { PaginatedResponse } from './interfaces/pagination.interface';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ScopesGuard } from '../auth/scopes.guard';
+import { Scopes } from '../auth/scopes.decorator';
 
 
 @Controller('productos')
+@UseGuards(JwtAuthGuard, ScopesGuard)
 export class ProductosController {
   constructor(private readonly productosService: ProductosService) {}
 
   @Get('/')
+  @Scopes('productos:read')
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,

@@ -1,4 +1,6 @@
-import Link from "next/link";
+// frontend/src/app/page.tsx
+"use client"; // Marcar como componente de cliente para usar hooks
+
 import {
   Card,
   CardContent,
@@ -7,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import AuthButton from "@/components/ui/AuthButton"; // Importar el componente de autenticación
 
 export default function HomePage() {
   return (
@@ -15,24 +17,18 @@ export default function HomePage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">
-            Sistema de Gestión de Stock
+            Sistema de Gestión de Stock 📦
           </CardTitle>
           <CardDescription className="text-lg pt-2">
-            Una solución integral para la administración de tu inventario.
+            Por favor, inicia sesión para continuar.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 dark:text-gray-300">
-            Bienvenido al panel de control. Desde aquí podrás gestionar productos,
-            categorías, y realizar un seguimiento de las reservas de stock de
-            manera eficiente.
-          </p>
+        <CardContent className="flex justify-center">
+          {/* Usar el componente AuthButton que maneja el estado de sesión */}
+          <AuthButton />
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button asChild size="lg">
-            <Link href="/products">Ir al Dashboard</Link>
-          </Button>
-        </CardFooter>
+        {/* Puedes remover el CardFooter o dejarlo vacío si ya no es necesario */}
+        {/* <CardFooter className="flex justify-center"></CardFooter> */}
       </Card>
     </main>
   );
