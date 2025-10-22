@@ -16,6 +16,7 @@ services:
     command: start --import-realm
     environment:
       KC_HOSTNAME: localhost
+      - TZ=America/Argentina/Buenos_Aires
       KC_HOSTNAME_PORT: 8081
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HTTP_ENABLED: true

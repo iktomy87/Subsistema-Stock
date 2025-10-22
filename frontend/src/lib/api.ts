@@ -1,3 +1,4 @@
+import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
 const API_BASE_URL = typeof window === 'undefined' 
@@ -6,7 +7,21 @@ const API_BASE_URL = typeof window === 'undefined'
 
 async function fetcher<T>(url: string, options: RequestInit = {}): Promise<T> {
     try {
-        const response = await fetch(url, options);
+        const session = await getSession();
+        const token = (session as any)?.accessToken;
+
+        const newOptions = { ...options };
+        newOptions.headers = { ...newOptions.headers };
+
+        if (token) {
+            (newOptions.headers as any)['Authorization'] = `Bearer ${token}`;
+        }
+        
+        if (newOptions.body && !(newOptions.headers as any)['Content-Type']) {
+            (newOptions.headers as any)['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(url, newOptions);
 
         if (!response.ok) {
             const errorBody = await response.text();
@@ -67,7 +82,6 @@ export async function obtenerProductoPorId(id: number): Promise<Product> {
 export async function crearProducto(body: ProductoInput): Promise<ProductoCreado> {
     return fetcher<ProductoCreado>(`${API_BASE_URL}/productos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
@@ -75,7 +89,6 @@ export async function crearProducto(body: ProductoInput): Promise<ProductoCreado
 export async function actualizarProducto(id: number, body: ProductoUpdate): Promise<Product> {
     return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
@@ -96,7 +109,6 @@ export async function obtenerCategoriaPorId(id: number): Promise<Category> {
 export async function crearCategoria(body: CategoriaInput): Promise<Category> {
     return fetcher<Category>(`${API_BASE_URL}/categorias`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
@@ -104,7 +116,6 @@ export async function crearCategoria(body: CategoriaInput): Promise<Category> {
 export async function actualizarCategoria(id: number, body: CategoriaInput): Promise<Category> {
     return fetcher<Category>(`${API_BASE_URL}/categorias/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
 }
@@ -149,7 +160,6 @@ export async function obtenerReservaPorId(idReserva: number): Promise<ReservaCom
 export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> {
     return fetcher<ReservaOutput>(`${API_BASE_URL}/reservas`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
     });
 }
@@ -157,7 +167,6 @@ export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> 
 export async function actualizarReserva(idReserva: number, input: ActualizarReservaInput): Promise<ReservaCompleta> {
     return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
     });
 }
@@ -165,7 +174,6 @@ export async function actualizarReserva(idReserva: number, input: ActualizarRese
 export async function cancelarReserva(idReserva: number, input: CancelacionReservaInput): Promise<void> {
     return fetcher<void>(`${API_BASE_URL}/reservas/${idReserva}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
     });
 }

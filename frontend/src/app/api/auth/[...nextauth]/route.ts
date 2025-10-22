@@ -8,6 +8,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
+      wellKnown: process.env.KEYCLOAK_WELL_KNOWN_URL!,
       authorization: {
         params: {
           scope: "openid",
@@ -35,6 +36,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
         (session as any).roles = (token as any).roles;
+        (session as any).accessToken = (token as any).accessToken;
         return session;
     }
   }
