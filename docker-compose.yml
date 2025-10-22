@@ -54,11 +54,18 @@ services:
     restart: always
     ports:
       - "8080:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:8080
+      NEXTAUTH_SECRET: "a-super-secret-value-for-nextauth"
+      KEYCLOAK_CLIENT_ID: "grupo-08"
+      KEYCLOAK_CLIENT_SECRET: "248f42b5-7007-47d1-a94e-e8941f352f6f"
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/ds-2025-realm
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
-    networks: # AÑADIR: Red por defecto para el frontend
+    networks:
       - default
+      - keycloak_keycloak_network
 
 volumes:
   postgres-data:

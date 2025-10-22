@@ -32,7 +32,7 @@ export default function AuthButton() {
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <span>No has iniciado sesión</span>
       <button 
-        onClick={() => signIn("keycloak")} // Llama al proveedor 'keycloak' que configuraste
+        onClick={() => signIn("keycloak", { callbackUrl: "/products" })} // Llama al proveedor 'keycloak' que configuraste
         style={{ padding: '5px 10px', cursor: 'pointer' }}
       >
         Iniciar Sesión con Keycloak
