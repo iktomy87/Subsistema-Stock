@@ -113,13 +113,14 @@ describe('ReservaController', () => {
   describe('GET /:idReserva', () => {
     it('debería llamar al servicio de consultarReserva con el ID correcto', async () => {
       const mockResponse = { idReserva: 1, estado: 'confirmado', expiresAt: new Date() };
+      const usuarioId = 1; 
 
       mockReservasService.consultarReserva.mockResolvedValue(mockResponse);
 
-      const result = await controller.consultarReserva(1);
+      const result = await controller.consultarReserva(1, usuarioId);
 
       expect(result).toEqual(mockResponse);
-      expect(service.consultarReserva).toHaveBeenCalledWith(1);
+      expect(service.consultarReserva).toHaveBeenCalledWith(1, usuarioId);
     });
   });
 
