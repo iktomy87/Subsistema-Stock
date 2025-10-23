@@ -1,38 +1,77 @@
-import Link from "next/link";
+// frontend/src/app/page.tsx
+"use client"; // Marcar como componente de cliente para usar hooks
+
+import { useSession } from "next-auth/react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import AuthButton from "@/components/ui/AuthButton"; // Importar el componente de autenticación
 
 export default function HomePage() {
+  const { data: session, status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-8">
+        <p>Cargando...</p>
+      </main>
+    );
+  }
+
+  if (status === "authenticated") {
+    const roles = (session as any).roles || [];
+    const isVendedor = roles.includes("vendedor");
+
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-8">
+        <Card className="w-full max-w-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">
+              Bienvenido, {session.user?.name || session.user?.email}
+            </CardTitle>
+            <CardDescription className="text-lg pt-2">
+              Has iniciado sesión correctamente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-4">
+            <div>
+              <h3 className="font-bold">Tus roles son:</h3>
+              <ul>
+                {roles.map((role: string) => (
+                  <li key={role}>{role}</li>
+                ))}
+              </ul>
+            </div>
+            {isVendedor && (
+              <div className="text-green-500 font-bold">
+                ¡Eres un vendedor!
+              </div>
+            )}
+            <AuthButton />
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-8">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">
-            Sistema de Gestión de Stock
+            Sistema de Gestión de Stock 📦
           </CardTitle>
           <CardDescription className="text-lg pt-2">
-            Una solución integral para la administración de tu inventario.
+            Por favor, inicia sesión para continuar.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 dark:text-gray-300">
-            Bienvenido al panel de control. Desde aquí podrás gestionar productos,
-            categorías, y realizar un seguimiento de las reservas de stock de
-            manera eficiente.
-          </p>
+        <CardContent className="flex justify-center">
+          <AuthButton />
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button asChild size="lg">
-            <Link href="/products">Ir al Dashboard</Link>
-          </Button>
-        </CardFooter>
       </Card>
     </main>
   );

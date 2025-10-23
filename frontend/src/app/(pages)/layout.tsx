@@ -1,5 +1,6 @@
 import Sidebar from "@/components/shared/sidebar";
 import Navbar from "@/components/shared/navbar";
+import { NextAuthProvider } from "./providers";
 
 export default function PagesLayout({
   children,
@@ -7,12 +8,14 @@ export default function PagesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <main className="p-4">{children}</main>
+    <NextAuthProvider>
+      <div className="flex h-screen">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar />
+          <main className="p-4">{children}</main>
+        </div>
       </div>
-    </div>
+    </NextAuthProvider>
   );
 }
