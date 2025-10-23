@@ -34,8 +34,8 @@ services:
       DB_NAME: stock_db
       
       # --- AÑADIR ESTAS VARIABLES ---
-      KEYCLOAK_ISSUER_URL: http://keycloak:8081/realms/ds-2025-realm
-      KEYCLOAK_JWKS_URI: http://keycloak:8081/realms/ds-2025-realm/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URL: http://localhost:8081/realms/ds-2025-realm
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
       # ------------------------------
 
     depends_on:
