@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 export default async function ReservationDetailPage({ params }: { params: { id: string } }) {
     const idReserva = Number(params.id);
     // TODO: Get usuarioId from session
-    const usuarioId = 2;
     const info = await obtenerReservaPorId(idReserva);
 
     return (

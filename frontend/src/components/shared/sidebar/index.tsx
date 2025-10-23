@@ -1,7 +1,8 @@
 
 "use client";
+import Link from "next/link";
 import React, { useState } from "react";
-import { Box, Building2, ChevronLeft, ChevronRight, Package, ShoppingCart } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, Package, ShoppingCart } from "lucide-react";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -27,22 +28,22 @@ const Sidebar = () => {
       <nav>
         <ul>
           <li className="p-4 hover:bg-gray-700">
-            <a href="/products" className="flex items-center">
+            <Link href="/products" className="flex items-center">
               <Package className="mr-2" />
               {!isCollapsed && "Productos"}
-            </a>
+            </Link>
           </li>
           <li className="p-4 hover:bg-gray-700">
-            <a href="/categories" className="flex items-center">
+            <Link href="/categories" className="flex items-center">
               <Box className="mr-2" />
               {!isCollapsed && "Categorías"}
-            </a>
+            </Link>
           </li>
           <li className="p-4 hover:bg-gray-700">
-            <a href="/reservations" className="flex items-center">
+            <Link href="/reservations" className="flex items-center">
               <ShoppingCart className="mr-2" />
               {!isCollapsed && "Reservas"}
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>

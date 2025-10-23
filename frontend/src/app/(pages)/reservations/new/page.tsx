@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { listarProductos, crearReserva } from "@/lib/api";
 import type { Product } from "@/lib/definitions";
 
+import Link from "next/link";
+
 export default function NewReservationPage() {
     const router = useRouter();
     const [idCompra, setIdCompra] = useState("");
@@ -17,7 +19,7 @@ export default function NewReservationPage() {
 
     const submit = async () => {
         const productos = Object.entries(qty)
-            .filter(([_, c]) => Number(c) > 0)
+            .filter(([, c]) => Number(c) > 0)
             .map(([id, c]) => ({ idProducto: Number(id), cantidad: Number(c) }));
 
         if (!idCompra) return alert("Ingrese idCompra");
@@ -69,7 +71,7 @@ export default function NewReservationPage() {
 
             <div>
                 <button className="border px-3 py-1 rounded" onClick={submit}>Reservar</button>
-                <a className="ml-2 border px-3 py-1 rounded" href="/reservations">Cancelar</a>
+                <Link className="ml-2 border px-3 py-1 rounded" href="/reservations">Cancelar</Link>
             </div>
         </section>
     );
