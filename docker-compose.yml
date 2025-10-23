@@ -34,7 +34,7 @@ services:
       DB_NAME: stock_db
       
       # --- AÑADIR ESTAS VARIABLES ---
-      KEYCLOAK_ISSUER_URL: http://host.docker.internal:8081/realms/ds-2025-realm
+      KEYCLOAK_ISSUER_URL: http://localhost:8081/realms/ds-2025-realm
       KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
       # ------------------------------
 
@@ -59,7 +59,7 @@ services:
       NEXTAUTH_SECRET: "a-super-secret-value-for-nextauth"
       KEYCLOAK_CLIENT_ID: "grupo-08"
       KEYCLOAK_CLIENT_SECRET: "248f42b5-7007-47d1-a94e-e8941f352f6f"
-      KEYCLOAK_ISSUER: http://localhost:8080/realms/ds-2025-realm
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/ds-2025-realm
       KEYCLOAK_WELL_KNOWN_URL: http://host.docker.internal:8081/realms/ds-2025-realm/.well-known/openid-configuration
     volumes:
       - ./frontend:/usr/src/app
