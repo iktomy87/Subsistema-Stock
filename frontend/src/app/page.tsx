@@ -1,6 +1,7 @@
 // frontend/src/app/page.tsx
 "use client"; // Marcar como componente de cliente para usar hooks
 
+import { Session } from "next-auth";
 import { useSession } from "next-auth/react";
 import {
   Card,
@@ -10,6 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import AuthButton from "@/components/ui/AuthButton"; // Importar el componente de autenticación
+
+interface SessionWithRoles extends Session {
+  roles?: string[];
+}
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -23,7 +28,7 @@ export default function HomePage() {
   }
 
   if (status === "authenticated") {
-    const roles = (session as any).roles || [];
+    const roles = (session as SessionWithRoles)?.roles || [];
     const isVendedor = roles.includes("vendedor");
 
     return (

@@ -5,20 +5,37 @@ const API_BASE_URL = typeof window === 'undefined'
     ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000' 
     : '/api';
 
-async function fetcher<T>(url: string, options: RequestInit = {}): Promise<T> {
+interface Session {
+    accessToken?: string;
+}
+
+async function fetcher<T>(url: string, options: RequestInit = {}, token?: string | null): Promise<T> {
     try {
-        const session = await getSession();
-        const token = (session as any)?.accessToken;
+        let sessionToken = token; // Usar el token pasado si existe
+
+        // Si no se pasó un token, intentar obtenerlo de la sesión (lado cliente)
+        if (sessionToken === undefined) { 
+            const session: Session | null = await getSession();
+            sessionToken = session?.accessToken;
+            console.log('Fetcher - Session Client-Side:', session); // Log lado cliente
+        } else {
+             console.log('Fetcher - Token Passed Server-Side:', sessionToken?.substring(0, 30) + '...'); // Log lado servidor
+        }
+
 
         const newOptions = { ...options };
-        newOptions.headers = { ...newOptions.headers };
+        newOptions.headers = { ...newOptions.headers } as Record<string, string>;
 
-        if (token) {
-            (newOptions.headers as any)['Authorization'] = `Bearer ${token}`;
+        if (sessionToken) { // Usar la variable sessionToken
+            newOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
+            console.log('Fetcher - Token Added:', newOptions.headers['Authorization']?.substring(0, 30) + '...');
+        } else {
+             console.log('Fetcher - No token available or passed.');
         }
-        
-        if (newOptions.body && !(newOptions.headers as any)['Content-Type']) {
-            (newOptions.headers as any)['Content-Type'] = 'application/json';
+
+        // ... resto de tu lógica de Content-Type, fetch, error handling ...
+        if (newOptions.body && !newOptions.headers['Content-Type']) {
+            newOptions.headers['Content-Type'] = 'application/json';
         }
 
         const response = await fetch(url, newOptions);
@@ -34,14 +51,27 @@ async function fetcher<T>(url: string, options: RequestInit = {}): Promise<T> {
         }
 
         return response.json();
+
     } catch (error) {
         console.error("Error en fetcher:", error);
         throw error;
     }
 }
 
-
 // ===== Productos =====
+interface BackendPaginatedProducts {
+    items?: Product[];
+    data?: Product[];
+    total?: number;
+    meta?: {
+        totalItems?: number;
+        currentPage?: number;
+        itemsPerPage?: number;
+    };
+    page?: number;
+    limit?: number;
+}
+
 export async function listarProductos(
     page: number = 1,
     limit: number = 10,
@@ -61,11 +91,8 @@ export async function listarProductos(
         params.append('categoriaId', categoriaId.toString());
     }
     
-    // Usamos <any> porque la estructura de la respuesta del backend puede variar.
-    const data = await fetcher<any>(`${API_BASE_URL}/productos?${params.toString()}`, { cache: 'no-store' });
+    const data = await fetcher<BackendPaginatedProducts>(`${API_BASE_URL}/productos?${params.toString()}`, { cache: 'no-store' });
 
-    // Adaptamos la estructura del backend a nuestra interfaz PaginatedProducts.
-    // Esto nos da flexibilidad si el backend cambia.
     return {
         items: data.items ?? data.data ?? [],
         total: data.total ?? data.meta?.totalItems ?? 0,
@@ -75,8 +102,9 @@ export async function listarProductos(
 }
 
 
-export async function obtenerProductoPorId(id: number): Promise<Product> {
-    return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, { cache: 'no-store' });
+export async function obtenerProductoPorId(id: number, token?: string | null): Promise<Product> {
+    // Pasar el token a fetcher
+    return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, { cache: 'no-store' }, token);
 }
 
 export async function crearProducto(body: ProductoInput): Promise<ProductoCreado> {
@@ -125,6 +153,19 @@ export async function eliminarCategoria(id: number) {
 }
 
 // ===== Reservas =====
+interface BackendPaginatedReservas {
+    items?: ReservaCompleta[];
+    data?: ReservaCompleta[];
+    total?: number;
+    meta?: {
+        totalItems?: number;
+        currentPage?: number;
+        itemsPerPage?: number;
+    };
+    page?: number;
+    limit?: number;
+}
+
 export async function listarReservas(
     usuarioId: number,
     page: number = 1,
@@ -140,7 +181,7 @@ export async function listarReservas(
         params.append('estado', estado);
     }
     
-    const data = await fetcher<any>(`${API_BASE_URL}/reservas?${params.toString()}`, { cache: 'no-store' });
+    const data = await fetcher<BackendPaginatedReservas>(`${API_BASE_URL}/reservas?${params.toString()}`, { cache: 'no-store' });
 
     return {
         items: data.items ?? data.data ?? [],

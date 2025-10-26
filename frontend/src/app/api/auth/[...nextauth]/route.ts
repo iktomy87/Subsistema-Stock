@@ -1,6 +1,22 @@
-import NextAuth, { NextAuthOptions } from "next-auth"
+import NextAuth, { NextAuthOptions, Session } from "next-auth"
 import KeycloakProvider from "next-auth/providers/keycloak"
 import jwt from "jsonwebtoken";
+
+interface DecodedToken {
+  realm_access?: {
+    roles?: string[];
+  };
+}
+
+interface Token {
+  accessToken?: string;
+  roles?: string[];
+}
+
+interface SessionWithRoles extends Session {
+  roles?: string[];
+  accessToken?: string;
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -26,17 +42,17 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account }) {
       if (account && account.access_token) {
-        token.accessToken = account.access_token;
-        const decodedToken: any = jwt.decode(account.access_token);
+        (token as Token).accessToken = account.access_token;
+        const decodedToken: DecodedToken | null = jwt.decode(account.access_token) as DecodedToken | null;
         if (decodedToken && decodedToken.realm_access) {
-            token.roles = decodedToken.realm_access.roles;
+            (token as Token).roles = decodedToken.realm_access.roles;
         }
       }
       return token;
     },
     async session({ session, token }) {
-        (session as any).roles = (token as any).roles;
-        (session as any).accessToken = (token as any).accessToken;
+        (session as SessionWithRoles).roles = (token as Token).roles;
+        (session as SessionWithRoles).accessToken = (token as Token).accessToken;
         return session;
     }
   }

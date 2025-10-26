@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ReservationsPage() {
     return (
         <section className="space-y-4">
             <header className="flex items-center">
                 <h1 className="text-xl font-semibold">Reservas</h1>
-                <a href="/reservations/new" className="ml-auto border px-3 py-1 rounded">Nueva</a>
+                <Link href="/reservations/new" className="ml-auto border px-3 py-1 rounded">Nueva</Link>
             </header>
 
             <form className="flex items-end gap-2" action={async (fd) => {
