@@ -44,19 +44,23 @@ export class ProductosController {
     return this.productosService.findAll(pageNum, limitNum, search, categoriaIdNum);
   }
 
+  
   @Get('/:id')
+  @Scopes('productos:read')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Producto> {
 
     return this.productosService.findOne(id);
   }
-
+  
   @Post()
+  @Scopes('productos:write')
   async create(@Body() createProductoDto: CreateProductoDto): Promise<{ id: number; mensaje: string }> {
     // El servicio ya retorna el objeto correcto, solo retornar directamente
     return this.productosService.create(createProductoDto);
   }
 
   @Patch(':id')
+  @Scopes('productos:write')
   async update(
     @Param('id', ParseIntPipe) id: number, 
     @Body() updateProductoDto: UpdateProductoDto,
@@ -65,6 +69,7 @@ export class ProductosController {
   }
 
   @Delete(':id')
+  @Scopes('productos:write')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.productosService.remove(id);

@@ -189,7 +189,7 @@ describe('ReservasService', () => {
       const mockReserva = { id: 1, usuarioId: 1, estado: 'confirmado', expiresAt: new Date() };
       mockReservasRepository.findOne.mockResolvedValue(mockReserva);
 
-      const result = await service.consultarReserva(1);
+      const result = await service.consultarReserva(mockReserva.id, mockReserva.usuarioId);
 
       expect(result).toEqual({
         id: mockReserva.id,
@@ -198,16 +198,20 @@ describe('ReservasService', () => {
         expiresAt: mockReserva.expiresAt,
       });
       expect(mockReservasRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
+        where: { 
+          id: mockReserva.id, 
+          usuarioId: mockReserva.usuarioId
+        },
         relations: ['detalles'],
       });
     });
 
     it('debería lanzar NotFoundException si la reserva no se encuentra', async () => {
       mockReservasRepository.findOne.mockResolvedValue(null);
+      const usuarioId = 1;
 
-      await expect(service.consultarReserva(999)).rejects.toThrow(NotFoundException);
-      await expect(service.consultarReserva(999)).rejects.toThrow('Reserva no encontrada');
+      await expect(service.consultarReserva(999, usuarioId)).rejects.toThrow(NotFoundException);
+      await expect(service.consultarReserva(999, usuarioId)).rejects.toThrow('Reserva no encontrada');
     });
   });
 

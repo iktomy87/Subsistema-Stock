@@ -81,9 +81,12 @@ export class ReservasService {
     };
   }
   
-  async consultarReserva(idReserva: number) {
+  async consultarReserva(idReserva: number, usuarioId: number) {
     const reserva = await this.reservasRepository.findOne({
-      where: { id: idReserva },
+      where: { 
+        id: idReserva,
+        usuarioId: usuarioId
+      },
       relations: ['detalles']
     });
 
