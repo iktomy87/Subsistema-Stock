@@ -126,8 +126,8 @@ export async function eliminarProducto(id: number) {
 }
 
 // ===== Categorías =====
-export async function getCategories(): Promise<Category[]> {
-    return fetcher<Category[]>(`${API_BASE_URL}/categorias`, { cache: 'no-store' });
+export async function getCategories(token?: string): Promise<Category[]> {
+    return fetcher<Category[]>(`${API_BASE_URL}/categorias`, { cache: 'no-store' }, token);
 }
 
 export async function obtenerCategoriaPorId(id: number): Promise<Category> {
@@ -148,8 +148,8 @@ export async function actualizarCategoria(id: number, body: CategoriaInput): Pro
     });
 }
 
-export async function eliminarCategoria(id: number) {
-    return fetcher<void>(`${API_BASE_URL}/categorias/${id}`, { method: 'DELETE' });
+export async function eliminarCategoria(id: number, token?: string) {
+    return fetcher<void>(`${API_BASE_URL}/categorias/${id}`, { method: 'DELETE' }, token);
 }
 
 // ===== Reservas =====

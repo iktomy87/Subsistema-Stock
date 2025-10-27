@@ -1,9 +1,13 @@
-import { getCategories, deleteCategory } from "@/lib/api";
+import { getCategories, eliminarCategoria } from "@/lib/api";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { Session } from "next-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
-    const cats = await getCategories();
+    const session: Session | null = await getServerSession(authOptions);
+    const cats = await getCategories(session?.accessToken);
 
     return (
         <section className="space-y-4">
@@ -30,7 +34,8 @@ export default async function CategoriesPage() {
                                     {/* Si luego agregás editar: <a className="underline mr-3" href={`/categories/${c.id}/edit`}>Editar</a> */}
                                     <form action={async () => {
                                         "use server";
-                                        await deleteCategory(c.id);
+                                        const session: Session | null = await getServerSession(authOptions);
+                                        await eliminarCategoria(c.id, session?.accessToken);
                                         return Response.redirect("/categories");
                                     }}>
                                         <button className="underline text-red-700">Eliminar</button>
