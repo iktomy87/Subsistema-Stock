@@ -11,10 +11,10 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks: # AÑADIR: Red por defecto para la BD
+    networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d stock_db"] # Verifica usuario y BD correctos
+      test: ["CMD-SHELL", "pg_isready -U user -d stock_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,20 +32,15 @@ services:
       DB_USERNAME: user
       DB_PASSWORD: password
       DB_NAME: stock_db
-      
-      # --- AÑADIR ESTAS VARIABLES ---
+      # Use the public-facing URL for issuer validation, matching the token
       KEYCLOAK_ISSUER_URL: http://localhost:8081/realms/ds-2025-realm
       KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
-      # ------------------------------
-
     depends_on:
       db:
         condition: service_healthy
-    
-    # --- AÑADIR ESTO PARA CONECTAR AMBAS REDES ---
     networks:
-      - default # Red para hablar con 'db'
-      - keycloak_keycloak_network # Red para hablar con 'keycloak'
+      - default
+      - keycloak_keycloak_network
 
   frontend:
     build:
@@ -59,8 +54,9 @@ services:
       NEXTAUTH_SECRET: "a-super-secret-value-for-nextauth"
       KEYCLOAK_CLIENT_ID: "grupo-08"
       KEYCLOAK_CLIENT_SECRET: "248f42b5-7007-47d1-a94e-e8941f352f6f"
+      # Corrected Keycloak URLs to use the service name for container-to-container communication
       KEYCLOAK_ISSUER: http://keycloak:8080/realms/ds-2025-realm
-      KEYCLOAK_WELL_KNOWN_URL: http://host.docker.internal:8081/realms/ds-2025-realm/.well-known/openid-configuration
+      KEYCLOAK_WELL_KNOWN_URL: http://keycloak:8080/realms/ds-2025-realm/.well-known/openid-configuration
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
@@ -72,11 +68,8 @@ volumes:
   postgres-data:
     driver: local
 
-# --- AÑADIR ESTO AL FINAL DEL ARCHIVO ---
-# Define la red 'keycloak_network' como una red externa
-# (Docker asumirá que ya fue creada por tu otro docker-compose.yml)
 networks:
   keycloak_keycloak_network:
     external: true
-  default: # Define la red interna de esta app
+  default:
     driver: bridge
