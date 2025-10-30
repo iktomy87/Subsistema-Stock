@@ -9,6 +9,8 @@ import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { UpdateProductoDto } from '../../dto/update-producto.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { In } from 'typeorm';
+import { CreateDimensionesDto } from 'src/productos/dto/create-dimensiones.dto';
+import { CreateUbicacionAlmacenDto } from 'src/productos/dto/create-ubicacion-almacen.dto';
 
 describe('ProductosService', () => {
   let service: ProductosService;
@@ -180,11 +182,27 @@ describe('ProductosService', () => {
 
   describe('create', () => {
     it('debería crear un producto exitosamente sin categorías ni imágenes', async () => {
+      const dimensionesDto: CreateDimensionesDto = {
+        largoCm: 10,
+        anchoCm: 5, 
+        altoCm: 2
+      };
+
+      const ubicacionDto: CreateUbicacionAlmacenDto = {
+        street: "25 de Mayo",
+        city: "Resistencia", 
+        state: "Chaco",
+        country: "Argentina",
+        postalCode: "H3500ABC"
+      };
+
       const createDto: CreateProductoDto = {
         nombre: 'Nuevo Producto',
         descripcion: 'Descripción',
         precio: 100,
         stockInicial: 10,
+        dimensiones: dimensionesDto,
+        ubicacion: ubicacionDto
       };
 
       const mockProductoGuardado = { 
@@ -207,10 +225,26 @@ describe('ProductosService', () => {
     });
 
     it('debería crear un producto con categorías e imágenes', async () => {
+      const dimensionesDto: CreateDimensionesDto = {
+        largoCm: 10,
+        anchoCm: 5, 
+        altoCm: 2
+      };
+
+      const ubicacionDto: CreateUbicacionAlmacenDto = {
+        street: "25 de Mayo",
+        city: "Resistencia", 
+        state: "Chaco",
+        country: "Argentina",
+        postalCode: "H3500ABC"
+      };
+
       const createDto: CreateProductoDto = {
         nombre: 'Producto con Categorías',
         precio: 200,
         stockInicial: 5,
+        dimensiones: dimensionesDto,
+        ubicacion: ubicacionDto,
         categoriaIds: [1, 2],
         imagenes: ['http://imagen1.jpg', 'http://imagen2.jpg']
       };
@@ -240,10 +274,26 @@ describe('ProductosService', () => {
     });
 
     it('debería lanzar BadRequestException si categorías no existen', async () => {
+      const dimensionesDto: CreateDimensionesDto = {
+        largoCm: 10,
+        anchoCm: 5, 
+        altoCm: 2
+      };
+
+      const ubicacionDto: CreateUbicacionAlmacenDto = {
+        street: "25 de Mayo",
+        city: "Resistencia", 
+        state: "Chaco",
+        country: "Argentina",
+        postalCode: "H3500ABC"
+      };
+
       const createDto: CreateProductoDto = {
         nombre: 'Producto Test',
         precio: 100,
         stockInicial: 10,
+        dimensiones: dimensionesDto, 
+        ubicacion: ubicacionDto,
         categoriaIds: [1, 2],
       };
 

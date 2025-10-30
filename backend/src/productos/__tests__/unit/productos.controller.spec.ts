@@ -3,6 +3,8 @@ import { ProductosController } from '../../productos.controller';
 import { ProductosService } from '../../productos.service';
 import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { UpdateProductoDto } from '../../dto/update-producto.dto';
+import { CreateDimensionesDto } from 'src/productos/dto/create-dimensiones.dto';
+import { CreateUbicacionAlmacenDto } from 'src/productos/dto/create-ubicacion-almacen.dto';
 
 describe('ProductosController', () => {
   let controller: ProductosController;
@@ -78,10 +80,26 @@ describe('ProductosController', () => {
 
   describe('POST /productos', () => {
     it('debería crear un producto exitosamente', async () => {
+      const dimensionesDto: CreateDimensionesDto = {
+        largoCm: 10,
+        anchoCm: 5, 
+        altoCm: 2
+      };
+
+      const ubicacionDto: CreateUbicacionAlmacenDto = {
+        street: "25 de Mayo",
+        city: "Resistencia", 
+        state: "Chaco",
+        country: "Argentina",
+        postalCode: "H3500ABC"
+      };
+
       const createDto: CreateProductoDto = {
         nombre: 'Nuevo Producto',
         precio: 100,
         stockInicial: 10,
+        dimensiones: dimensionesDto,
+        ubicacion: ubicacionDto
       };
 
       const mockResponse = { id: 1, mensaje: 'Producto creado exitosamente' };
