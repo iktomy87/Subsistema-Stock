@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reserva } from './entities/reserva.entity';
@@ -64,6 +64,14 @@ export class ReservasService {
       throw new NotFoundException('Reserva no encontrada');
     }
 
+    if (reserva.estado === 'cancelado') {
+      return { mensaje: 'La reserva ya se encontraba cancelada' };
+    }
+
+    if (reserva.estado === 'confirmado') {
+      throw new BadRequestException('No se puede cancelar una reserva ya confirmada');
+    }
+
     // Liberar stock
     const productos = reserva.detalles.map(detalle => ({
       idProducto: detalle.productoId,
@@ -74,6 +82,8 @@ export class ReservasService {
 
     // Actualizar estado de la reserva
     reserva.estado = 'cancelado';
+    reserva.motivoCancelacion = liberacionInput.motivoCancelacion;
+    reserva.fechaCancelacion = new Date();
     await this.reservasRepository.save(reserva);
 
     return {
