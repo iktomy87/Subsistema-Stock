@@ -14,7 +14,7 @@ import { Scopes } from '../auth/scopes.decorator';
 export class ReservaController {
   constructor(private readonly reservaService: ReservasService) {}
 
-  @Post()
+  @Post('/')
   @Scopes('reservas:write')
   async reservar(@Body() reservaInput: ReservaInputDto): Promise<Reserva> {
     return this.reservaService.reservar(reservaInput);
@@ -36,11 +36,14 @@ export class ReservaController {
 
   @Get('/:idReserva')
   @Scopes('reservas:read')
-  async consultarReserva(@Param('idReserva', ParseIntPipe) idReserva: number): Promise<Reserva> {
-    return this.reservaService.consultarReserva(idReserva);
+  async consultarReserva(
+    @Param('idReserva', ParseIntPipe) idReserva: number,
+    @Query('usuarioId', ParseIntPipe) usuarioId: number
+  ): Promise<Reserva> {
+    return this.reservaService.consultarReserva(idReserva, usuarioId);
   }
 
-  @Get()
+  @Get('/')
   @Scopes('reservas:read')
   async consultarReservasDeUsuario( 
     @Query('usuarioId', ParseIntPipe) usuarioId: number, 
