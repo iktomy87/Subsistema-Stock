@@ -5,10 +5,11 @@ export interface Dimensiones {
 }
 
 export interface UbicacionAlmacen {
-  almacenId: number;
-  pasillo: string;
-  estanteria: string;
-  nivel: number;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
 }
 
 export interface ImagenProducto {
@@ -47,7 +48,7 @@ export interface ProductoInput {
   stockInicial: number;
   pesoKg?: number;
   dimensiones?: Dimensiones;
-  ubicacion?: UbicacionAlmacen;
+  ubicacion: UbicacionAlmacen; // <-- Hacemos que coincida con el DTO del backend
   imagenes?: ImagenProducto[];
   categoriaIds?: number[];
 }
@@ -130,5 +131,3 @@ export interface CancelacionReservaInput {
 export const getCategory = (id: number, cats: Category[]) => {
   return cats.find((cat) => cat.id === id);
 };
-
-

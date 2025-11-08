@@ -6,7 +6,7 @@ export class UbicacionAlmacen {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ default: 'Sin especificar' })
     street: string;
 
     @Column()

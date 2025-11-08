@@ -33,9 +33,11 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
              console.log('Fetcher - No token available or passed.');
         }
 
-        // ... resto de tu lógica de Content-Type, fetch, error handling ...
-        if (newOptions.body && !newOptions.headers['Content-Type']) {
-            newOptions.headers['Content-Type'] = 'application/json';
+        // No establecer Content-Type si el body es FormData
+        if (newOptions.body && !(newOptions.body instanceof FormData)) {
+            if (!newOptions.headers['Content-Type']) {
+                newOptions.headers['Content-Type'] = 'application/json';
+            }
         }
 
         const response = await fetch(url, newOptions);
@@ -107,11 +109,30 @@ export async function obtenerProductoPorId(id: number, token?: string | null): P
     return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, { cache: 'no-store' }, token);
 }
 
-export async function crearProducto(body: ProductoInput): Promise<ProductoCreado> {
+export async function crearProducto(
+    productData: ProductoInput,
+    token?: string
+): Promise<ProductoCreado> {
+    // Paso 1: Crear el producto con los datos de texto/numéricos.
     return fetcher<ProductoCreado>(`${API_BASE_URL}/productos`, {
         method: 'POST',
-        body: JSON.stringify(body),
-    });
+        body: JSON.stringify(productData),
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    }, token);
+}
+
+export async function uploadImage(productId: number, image: File, token?: string): Promise<void> {
+    const formData = new FormData();
+    // El nombre 'file' debe coincidir con el que espera el backend (usualmente definido en el FileInterceptor)
+    formData.append('file', image);
+  
+    // Asumimos que el endpoint del backend es /productos/{id}/upload
+    return fetcher<void>(`${API_BASE_URL}/productos/${productId}/upload`, {
+      method: 'POST',
+      body: formData,
+    }, token);
 }
 
 export async function actualizarProducto(id: number, body: ProductoUpdate): Promise<Product> {
