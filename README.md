@@ -69,6 +69,11 @@ Para un despliegue rápido y consistente, se proporciona una configuración de D
     ```shell
     docker compose up -d --build
     ```
+    Para construir solo el backend y la base de datos:
+    ```shell
+    docker compose up -d --build backend db
+    ```
+    Abrir la carpeta con VS, y en la carpeta de backend buscar el archivo "entrypoint.sh", buscar en la barra inferior del VS donde diga "CRLF" hacer click y cambiar a "LF", luego guardar. 
     Este comando realizará las siguientes acciones:
     *   Construirá la imagen de la aplicación NestJS (`backend`) basándose en el `backend/Dockerfile`.
     *   Descargará la imagen de `postgres:15-alpine` para el servicio de base de datos (`db`).
@@ -76,7 +81,7 @@ Para un despliegue rápido y consistente, se proporciona una configuración de D
     *   Las variables de entorno para la conexión a la base de datos se inyectan automáticamente desde `docker-compose.yml` al contenedor del backend.
     *   Se creará un volumen (`postgres-data`) para persistir los datos de la base de datos.
 
-Una vez finalizado, el backend estará accesible en `http://localhost:3000` y el frontend en 'http://localhost:8000'.
+Una vez finalizado, el backend estará accesible en `http://localhost:3000` y el frontend en 'http://localhost:8080'.
 
 Al iniciar, el contenedor del backend ejecuta automáticamente el script entrypoint.sh. Este script corre el comando npm run migration:run antes de iniciar la aplicación. Esto asegura que tu base de datos (stock_db) siempre tenga el esquema y las tablas más recientes.
 
