@@ -1,0 +1,30 @@
+services:
+  frontend:
+    # Asume que el Dockerfile está en el mismo directorio (./frontend)
+    build:
+      context: .
+    container_name: stock_frontend_desacoplado
+    restart: always
+    ports:
+      # Expone la aplicación en el puerto 8080 del host
+      - "8080:3000"
+    
+    environment:
+      # --- URLs de la aplicación ---
+      # URL pública de la aplicación para NextAuth
+      NEXTAUTH_URL: http://localhost:8080
+      # URL del API Gateway que corre en el localhost del PC anfitrión.
+      # host.docker.internal es un DNS especial que apunta al host desde el contenedor.
+      NEXT_PUBLIC_STOCK_API_URL: http://localhost/stock
+
+      # --- Secretos y configuración de Keycloak (usando un archivo .env) ---
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_ISSUER: https://keycloak.cubells.com.ar/realms/ds-2025-realm
+      KEYCLOAK_WELL_KNOWN_URL: https://keycloak.cubells.com.ar/realms/ds-2025-realm/.well-known/openid-configuration
+    volumes:
+      # Sincroniza el código fuente para desarrollo en caliente (hot-reloading)
+      - .:/usr/src/app
+      # Evita que la carpeta node_modules local sobreescriba la del contenedor
+      - /usr/src/app/node_modules
