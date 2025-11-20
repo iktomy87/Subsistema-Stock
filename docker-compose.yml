@@ -21,66 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- 2. Base de datos de Keycloak ---
-  keycloak_db:
-    image: postgres:16.2
-    container_name: keycloak_db
-    volumes:
-      - keycloak_postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: keycloak_db
-      POSTGRES_USER: keycloak_db_user
-      POSTGRES_PASSWORD: keycloak_db_user_password
-    networks:
-      - stock-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak_db_user -d keycloak_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-  
-  # --- 3. Keycloak (Inicia después de su DB) ---
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0.6
-    container_name: keycloak
-    command: start --import-realm
-    environment:
-      KC_HOSTNAME: localhost
-      TZ: America/Argentina/Buenos_Aires
-      KC_HOSTNAME_PORT: 8081
-      KC_HOSTNAME_STRICT_BACKCHANNEL: false
-      KC_HTTP_ENABLED: true
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HEALTH_ENABLED: true
-      # Corrige el error de red ECONNREFUSED
-      KC_HTTP_HOST: 0.0.0.0 
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_db_user
-      KC_DB_PASSWORD: keycloak_db_user_password
-    ports:
-      - "8081:8080"
-    volumes:
-      - ./keycloak/realm-config:/opt/keycloak/data/import
-      # Carga el driver de Postgres 16 (descárgalo y ponlo en esta carpeta)
-      - ./keycloak/drivers:/opt/keycloak/providers
-      - ./keycloak/healthcheck.sh:/opt/keycloak/bin/healthcheck.sh
-    restart: always
-    networks:
-      - stock-network 
-    depends_on:
-      keycloak_db: 
-        condition: service_healthy
-    healthcheck: 
-      test: ["CMD-SHELL", "bash /opt/keycloak/bin/healthcheck.sh"]
-      interval: 30s
-      timeout: 30s
-      retries: 10
-      start_period: 600s
-
-  # --- 4. Backend (Inicia DESPUÉS de Keycloak y su DB) ---
+  # --- 2. Backend (Inicia DESPUÉS de su DB) ---
   backend:
     build:
       context: ./backend
@@ -94,17 +35,15 @@ services:
       DB_USERNAME: user
       DB_PASSWORD: password
       DB_NAME: stock_db
-      KEYCLOAK_ISSUER_URL: http://localhost:8081/realms/ds-2025-realm
-      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URL: https://keycloak.cubells.com.ar/realms/ds-2025-realm
+      KEYCLOAK_JWKS_URI: https://keycloak.cubells.com.ar/realms/ds-2025-realm/protocol/openid-connect/certs
     depends_on:
       db:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
     networks:
       - stock-network
 
-  # --- 5. Frontend (Inicia DESPUÉS de Keycloak y Backend) ---
+  # --- 3. Frontend (Inicia DESPUÉS del Backend) ---
   frontend:
     build:
       context: ./frontend
@@ -118,9 +57,8 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      # URLs internas correctas (usan nombres de servicio)
-      KEYCLOAK_ISSUER: http://keycloak:8080/realms/ds-2025-realm
-      KEYCLOAK_WELL_KNOWN_URL: http://keycloak:8080/realms/ds-2025-realm/.well-known/openid-configuration
+      KEYCLOAK_ISSUER: https://keycloak.cubells.com.ar/realms/ds-2025-realm
+      KEYCLOAK_WELL_KNOWN_URL: https://keycloak.cubells.com.ar/realms/ds-2025-realm/.well-known/openid-configuration
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
@@ -128,11 +66,9 @@ services:
       - stock-network
     depends_on:
       - backend
-      - keycloak
 
 volumes:
   postgres-data:
-  keycloak_postgres_data:
 
 networks:
   stock-network:
