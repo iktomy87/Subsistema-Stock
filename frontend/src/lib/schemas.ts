@@ -1,4 +1,4 @@
-﻿﻿import { z } from "zod";
+﻿﻿﻿import { z } from "zod";
 
 export const dimensionesSchema = z.object({
     largoCm: z.coerce.number().positive({ message: "El largo debe ser positivo." }),

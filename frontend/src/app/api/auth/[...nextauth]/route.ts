@@ -20,7 +20,7 @@ interface ExtendedJWT extends JWT {
 }
 
 // Extender el tipo Session para incluir nuestros campos personalizados
-interface ExtendedSession extends Session {
+export interface ExtendedSession extends Session {
   accessToken?: string;
   roles?: string[];
   error?: string;

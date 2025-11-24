@@ -6,9 +6,11 @@ import { Categoria } from '../categorias/entities/categoria.entity';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { PaginatedResponse } from './interfaces/pagination.interface';
-import { Dimensiones } from './entities/dimensiones.entity';
-import { UbicacionAlmacen } from './entities/ubicacion-almacen.entity';
 import { ImagenProducto } from './entities/imagen-producto.entity';
+import * as fs from 'fs';
+import { promisify } from 'util';
+
+const unlinkAsync = promisify(fs.unlink);
 
 @Injectable()
 export class ProductosService {
@@ -17,6 +19,8 @@ export class ProductosService {
     private productosRepository: Repository<Producto>,
     @InjectRepository(Categoria)
     private categoriasRepository: Repository<Categoria>,
+    @InjectRepository(ImagenProducto)
+    private imagenProductoRepository: Repository<ImagenProducto>,
   ) {}
 
   async findAll(page?: number, limit?: number, search?: string, categoriaId?: number): Promise<PaginatedResponse<Producto>> {
@@ -74,8 +78,8 @@ export class ProductosService {
     return producto;
   }
 
-  async create(createProductoDto: CreateProductoDto): Promise<{ id: number; mensaje: string }> {
-    const { categoriaIds, imagenes: imagenesUrls, stockInicial, ...productoData } = createProductoDto;
+  async create(createProductoDto: CreateProductoDto, files: Express.Multer.File[]): Promise<{ id: number; mensaje: string }> {
+    const { categoriaIds, stockInicial, ...productoData } = createProductoDto;
 
     let categorias: Categoria[] = [];
     if (categoriaIds && categoriaIds.length > 0) {
@@ -85,20 +89,23 @@ export class ProductosService {
       }
     }
 
+    const imagenes = (files || []).map(file => ({
+      url: `/productos/uploads/${file.filename}`,
+      esPrincipal: false,
+    }));
+
+    if (imagenes.length > 0) {
+      imagenes[0].esPrincipal = true;
+    }
+
     const nuevoProducto = this.productosRepository.create({
       ...productoData,
       stockDisponible: stockInicial,
       categorias,
-      // TypeORM creará las entidades relacionadas gracias a `cascade: true`
       dimensiones: productoData.dimensiones,
       ubicacion: productoData.ubicacion,
-      imagenes: imagenesUrls?.map(url => ({ url, esPrincipal: false })) || [],
+      imagenes,
     });
-
-    // Opcional: marcar la primera imagen como principal si no se especifica
-    if (nuevoProducto.imagenes.length > 0) {
-      nuevoProducto.imagenes[0].esPrincipal = true;
-    }
 
     const productoGuardado = await this.productosRepository.save(nuevoProducto);
 
@@ -108,8 +115,8 @@ export class ProductosService {
     };
   }
 
-  async update(id: number, updateProductoDto: UpdateProductoDto): Promise<Producto> {
-    const { categoriaIds, imagenes: imagenesUrls, stockInicial, ...productoData } = updateProductoDto;
+  async update(id: number, updateProductoDto: UpdateProductoDto, files: Express.Multer.File[]): Promise<Producto> {
+    const { categoriaIds, stockInicial, ...productoData } = updateProductoDto;
     
     const producto = await this.productosRepository.findOne({
         where: { id },
@@ -120,7 +127,19 @@ export class ProductosService {
       throw new NotFoundException(`Producto con ID ${id} no encontrado`);
     }
 
-    // Actualizar datos básicos y relaciones anidadas
+    // Limpiar imágenes antiguas si se suben nuevas
+    if (files && files.length > 0) {
+      for (const imagen of producto.imagenes) {
+        await this.imagenProductoRepository.delete(imagen.id);
+        const imagePath = `./uploads/${imagen.url.split('/').pop()}`;
+        try {
+          await unlinkAsync(imagePath);
+        } catch (err) {
+          console.error(`Failed to delete image: ${imagePath}`, err);
+        }
+      }
+    }
+
     const updatedPayload = {
         ...producto,
         ...productoData,
@@ -150,12 +169,15 @@ export class ProductosService {
       }
     }
 
-    if (imagenesUrls !== undefined) {
-        // Reemplazar imágenes
-        updatedPayload.imagenes = imagenesUrls.map(url => ({ url, esPrincipal: false })) as unknown as ImagenProducto[];
-        if (updatedPayload.imagenes.length > 0) {
-            updatedPayload.imagenes[0].esPrincipal = true;
-        }
+    if (files && files.length > 0) {
+      const imagenes = files.map(file => ({
+        url: `/productos/uploads/${file.filename}`,
+        esPrincipal: false,
+      }));
+      if (imagenes.length > 0) {
+        imagenes[0].esPrincipal = true;
+      }
+      updatedPayload.imagenes = imagenes as ImagenProducto[];
     }
 
     const updatedProduct = await this.productosRepository.save(updatedPayload);
@@ -163,6 +185,15 @@ export class ProductosService {
   }
 
   async remove(id: number): Promise<void> {
+    const producto = await this.findOne(id);
+    for (const imagen of producto.imagenes) {
+      const imagePath = `./uploads/${imagen.url.split('/').pop()}`;
+      try {
+        await unlinkAsync(imagePath);
+      } catch (err) {
+        console.error(`Failed to delete image: ${imagePath}`, err);
+      }
+    }
     const result = await this.productosRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Producto con ID ${id} no encontrado`);

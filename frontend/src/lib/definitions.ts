@@ -59,8 +59,8 @@ export interface ProductoUpdate {
   precio?: number;
   stockInicial?: number;
   pesoKg?: number;
-  dimensiones?: Dimensiones;
-  ubicacion?: UbicacionAlmacen;
+  dimensiones: Dimensiones;
+  ubicacion: UbicacionAlmacen;
   imagenes?: ImagenProducto[];
   categoriaIds?: number[];
 }

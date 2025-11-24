@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { ProductosModule } from './productos/productos.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { ReservasModule } from './reservas/reservas.module';
@@ -25,6 +26,9 @@ import { TestAuthModule } from './auth/test-auth.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: process.env.NODE_ENV !== 'production',
       }),
+    }),
+    MulterModule.register({
+      dest: './uploads',
     }),
     ProductosModule,
     CategoriasModule,

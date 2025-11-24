@@ -1,3 +1,4 @@
+
 import { 
   Controller, 
   Get, 
@@ -12,7 +13,10 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
@@ -54,18 +58,23 @@ export class ProductosController {
   
   @Post()
   @Scopes('productos:write')
-  async create(@Body() createProductoDto: CreateProductoDto): Promise<{ id: number; mensaje: string }> {
-    // El servicio ya retorna el objeto correcto, solo retornar directamente
-    return this.productosService.create(createProductoDto);
+  @UseInterceptors(FilesInterceptor('imagenes'))
+  async create(
+    @Body() createProductoDto: CreateProductoDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<{ id: number; mensaje: string }> {
+    return this.productosService.create(createProductoDto, files);
   }
 
   @Patch(':id')
   @Scopes('productos:write')
+  @UseInterceptors(FilesInterceptor('imagenes'))
   async update(
     @Param('id', ParseIntPipe) id: number, 
     @Body() updateProductoDto: UpdateProductoDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ): Promise<Producto> {
-    return this.productosService.update(id, updateProductoDto);
+    return this.productosService.update(id, updateProductoDto, files);
   }
 
   @Delete(':id')

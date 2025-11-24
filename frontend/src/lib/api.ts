@@ -1,7 +1,9 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_STOCK_API_URL;
+const API_BASE_URL = typeof window === 'undefined' 
+    ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000' 
+    : '/api';
 
 interface Session {
     accessToken?: string;
@@ -42,8 +44,8 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error(`HTTP error! status: ${response.status}`, errorBody);
-            throw new Error(`Error en la petición: ${response.statusText}`);
+            console.error(`HTTP error! status: ${response.status} - ${errorBody}`);
+            throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
         }
 
         if (response.status === 204) {
@@ -133,10 +135,10 @@ export async function uploadImage(productId: number, image: File, token?: string
     }, token);
 }
 
-export async function actualizarProducto(id: number, body: ProductoUpdate): Promise<Product> {
+export async function actualizarProducto(id: number, body: any): Promise<Product> {
     return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify(body),
+        body: body,
     });
 }
 

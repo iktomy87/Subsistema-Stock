@@ -1,87 +1,302 @@
+// frontend/src/app/(pages)/products/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { productSchema, type ProductInput } from '@/lib/schemas';
-import { createProduct, updateProduct, getCategories } from '@/lib/api';
-import type { Category, Product } from '@/lib/definitions';
-import Link from 'next/link';
+import { useSession } from 'next-auth/react'; // <-- Importar useSession
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { listarProductos, getCategories, eliminarProducto } from '@/lib/api';
+import { Product, Category } from '@/lib/definitions';
+import { ProductRow } from '@/components/shared/ProductRow';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
-export function ProductForm({ initial }: { initial?: Product }) {
-    const router = useRouter();
-    const [cats, setCats] = useState<Category[]>([]);
+const ProductsPage = () => {
+  const router = useRouter();
+  const { data: session, status } = useSession(); // <-- Obtener sesión y status
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true); // Estado de carga general
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-    const form = useForm<ProductInput>({
-        resolver: zodResolver(productSchema),
-        defaultValues: initial
-            ? {
-                nombre: initial.nombre,
-                descripcion: initial.descripcion ?? '',
-                precio: initial.precio,
-                stock: initial.stock,
-                categoriaId: initial.categorias?.[0]?.id ?? 0,
-                activo: initial.activo,
-            }
-            : { nombre: '', descripcion: '', precio: 0, stock: 0, categoriaId: 0, activo: true },
-    });
+  // --- Efecto principal para manejar autenticación y carga inicial ---
+  useEffect(() => {
+    // Si la sesión aún está cargando, esperar
+    if (status === 'loading') {
+      setLoading(true); // Indicar carga
+      return; 
+    }
 
-    useEffect(() => {
-        getCategories().then(setCats).catch(console.error);
-    }, []);
+    // Si no está autenticado, redirigir al inicio (o login)
+    if (status === 'unauthenticated') {
+      router.push('/'); 
+      return; 
+    }
 
-    const onSubmit = async (values: ProductInput) => {
-        try {
-            if (initial) await updateProduct(initial.id, values);
-            else await createProduct(values);
-            router.push('/products');
-        } catch (e: Error) {
-            alert(e.message || 'Error al guardar');
-        }
-    };
+    // Si está autenticado, cargar datos iniciales
+    if (status === 'authenticated') {
+      fetchProducts(1, '', 'all'); // Cargar primera página sin filtros
+      fetchCategories();
+    }
+  }, [status, router]); // Depender del estado de la sesión
 
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = form;
+  // --- Efecto para recargar productos al cambiar filtros/página ---
+  // Se ejecuta solo si está autenticado y cambian las dependencias
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchProducts(currentPage, searchTerm, categoryFilter);
+    }
+    // No incluir fetchProducts en las dependencias para evitar bucles
+  }, [currentPage, searchTerm, categoryFilter, status]); 
 
-    return (
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-3 max-w-xl'>
-            <div>
-                <label className='text-sm'>Nombre</label>
-                <input className='border rounded w-full px-2 py-1' {...register('nombre')} />
-                {errors.nombre && <p className='text-red-600 text-sm'>{errors.nombre.message}</p>}
-            </div>
-            <div>
-                <label className='text-sm'>Descripción</label>
-                <textarea className='border rounded w-full px-2 py-1' rows={3} {...register('descripcion')} />
-            </div>
-            <div className='grid grid-cols-2 gap-3'>
-                <div>
-                    <label className='text-sm'>Precio</label>
-                    <input type='number' step='0.01' className='border rounded w-full px-2 py-1' {...register('precio')} />
-                    {errors.precio && <p className='text-red-600 text-sm'>{errors.precio.message}</p>}
-                </div>
-                <div>
-                    <label className='text-sm'>Stock</label>
-                    <input type='number' className='border rounded w-full px-2 py-1' {...register('stock')} />
-                    {errors.stock && <p className='text-red-600 text-sm'>{errors.stock.message}</p>}
-                </div>
-            </div>
-            <div>
-                <label className='text-sm'>Categoría</label>
-                <select className='border rounded w-full px-2 py-1' {...register('categoriaId')}>
-                    <option value=''>Seleccione</option>
-                    {cats.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-                {errors.categoriaId && <p className='text-red-600 text-sm'>{errors.categoriaId.message}</p>}
-            </div>
-            <label className='inline-flex items-center gap-2'>
-                <input type='checkbox' {...register('activo')} /> Activo
-            </label>
+  const fetchProducts = async (page: number, search: string, category: string) => {
+    setLoading(true);
+    try {
+      const categoryId = category !== 'all' ? parseInt(category) : undefined;
+      // Asumimos que listarProductos usa el token de fetcher
+      const paginatedProducts = await listarProductos(page, 10, search, categoryId);
+      setProducts(paginatedProducts.items);
+      setTotalPages(Math.ceil(paginatedProducts.total / 10));
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Podrías mostrar un mensaje de error al usuario
+      setProducts([]); // Limpiar productos en caso de error
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            <div className='pt-2 flex gap-2'>
-                <button disabled={isSubmitting} className='border px-3 py-1 rounded'>{initial ? 'Guardar' : 'Crear'}</button>
-                <Link className='border px-3 py-1 rounded' href='/products'>Cancelar</Link>
-            </div>
-        </form>
-    );
-}
+  const fetchCategories = async () => {
+    try {
+      // Asumimos que getCategories usa el token de fetcher
+      const cats = await getCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+  
+  // --- Funciones de búsqueda y filtro resetean la página a 1 ---
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1); // Resetear a página 1 al buscar
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    setCurrentPage(1); // Resetear a página 1 al filtrar
+  };
+  // -----------------------------------------------------------
+
+  const handleView = (product: Product) => {
+    router.push(`/products/${product.id}`);
+  };
+
+  const handleEdit = (product: Product) => {
+    router.push(`/products/${product.id}/edit`);
+  };
+
+  const handleDelete = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedProduct) {
+      try {
+        // Asumimos que eliminarProducto usa el token de fetcher
+        await eliminarProducto(selectedProduct.id);
+        // Volver a cargar los productos de la página actual
+        fetchProducts(currentPage, searchTerm, categoryFilter); 
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
+      setIsModalOpen(false);
+      setSelectedProduct(null);
+    }
+  };
+
+  const SkeletonRow = () => (
+    <TableRow>
+      <TableCell className="h-12 w-12 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="h-4 w-1/6 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="h-4 w-1/6 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="h-4 w-1/12 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></TableCell>
+      <TableCell className="flex h-10 items-center justify-end space-x-1">
+          <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></div>
+          <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></div>
+          <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-700"></div>
+      </TableCell>
+    </TableRow>
+  );
+
+  // --- Renderizado Condicional ---
+  // Mostrar carga mientras se verifica sesión o se cargan datos iniciales
+  if (status === 'loading' || (status === 'authenticated' && loading && products.length === 0 && currentPage === 1)) {
+      return (
+          <div className="container mx-auto py-10">
+              <h1 className="text-3xl font-bold mb-6">Cargando Productos...</h1>
+              <div className="rounded-md border">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>Imagen</TableHead>
+                              <TableHead>Nombre</TableHead>
+                              <TableHead>Categoría</TableHead>
+                              <TableHead>Precio</TableHead>
+                              <TableHead>Stock</TableHead>
+                              <TableHead>Estado</TableHead>
+                              <TableHead><span className="sr-only">Acciones</span></TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+                      </TableBody>
+                  </Table>
+              </div>
+          </div>
+      );
+  }
+
+  // Si después de cargar sabemos que no está autenticado (aunque el useEffect ya debería haber redirigido)
+  if (status === 'unauthenticated') {
+      return (
+          <div className="container mx-auto py-10 text-center">
+              <p>Redirigiendo al inicio de sesión...</p> 
+          </div>
+      );
+  }
+
+  // --- Renderizado Principal (cuando está autenticado) ---
+  return (
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-6">Productos</h1>
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center space-x-2">
+          <Input
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={handleSearchChange} // Usar handler que resetea página
+            className="max-w-sm"
+          />
+          <Select onValueChange={handleCategoryChange} value={categoryFilter}> {/* Usar handler que resetea página */}
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={String(category.id)}>
+                  {category.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => router.push('/products/new')}>Agregar Producto</Button>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {/* ... Encabezados sin cambios ... */}
+             <TableRow>
+              <TableHead>Imagen</TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Categoría</TableHead>
+              <TableHead>Precio</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>
+                <span className="sr-only">Acciones</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {/* Mostrar esqueletos solo si está cargando y es la primera carga */}
+            {loading && products.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+            ) : products.length > 0 ? (
+              products.map((product) => (
+                <ProductRow
+                  key={product.id}
+                  product={product}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  No se encontraron productos con los filtros actuales.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {/* Paginación (mostrar solo si no está cargando y hay más de una página) */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Siguiente
+          </Button>
+        </div>
+      )}
+      <ConfirmModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        title="¿Estás seguro?"
+        description={`Esta acción eliminará permanentemente el producto "${selectedProduct?.nombre}".`}
+        onConfirm={handleDeleteConfirm}
+      />
+    </div>
+  );
+};
+
+export default ProductsPage;
