@@ -1,7 +1,9 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_STOCK_API_URL;
+const API_BASE_URL = typeof window === 'undefined' 
+    ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000' 
+    : '/api';
 
 interface Session {
     accessToken?: string;
