@@ -34,7 +34,7 @@ describe('AuthButton', () => {
   });
 
   
-  it('debe mostrar el botón de "Iniciar Sesión" y llamar a signIn al hacer click', () => {
+  it('debería mostrar el botón de "Iniciar Sesión" y llamar a signIn al hacer click', () => {
     mockUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -54,12 +54,11 @@ describe('AuthButton', () => {
   });
 
   
-  it('debe mostrar el nombre de usuario y el botón de "Cerrar Sesión"', () => {
+  it('debería mostrar el nombre de usuario y el botón de "Cerrar Sesión"', () => {
     const mockUser = {
       name: "Juan Perez",
       email: "juan@ejemplo.com",
     };
-
 
     mockUseSession.mockReturnValue({
       data: { user: mockUser, expires: "1h" },
@@ -80,7 +79,7 @@ describe('AuthButton', () => {
     expect(mockSignOut).toHaveBeenCalledWith();
   });
   
-  it('debe mostrar el email si el nombre es nulo', () => {
+  it('debería mostrar el email si el nombre es nulo', () => {
     const mockUser = {
       name: null,
       email: "sofia@ejemplo.com",
@@ -96,7 +95,7 @@ describe('AuthButton', () => {
     expect(screen.getByText(`¡Hola, ${mockUser.email}!`)).toBeInTheDocument();
   });
   
-  it('debe mostrar "Usuario" si el nombre y el email son nulos', () => {
+  it('debería mostrar "Usuario" si el nombre y el email son nulos', () => {
     const mockUser = {
       name: null,
       email: null,
