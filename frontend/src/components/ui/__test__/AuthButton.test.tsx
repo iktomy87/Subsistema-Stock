@@ -7,7 +7,7 @@ jest.mock("next-auth/react", () => ({
 	signOut: jest.fn(),
 }));
 
-describe('AuthButton', () => {
+describe('AuthButton Component', () => {
 
   let mockUseSession: jest.Mock;
   let mockSignIn: jest.Mock;
