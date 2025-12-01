@@ -15,7 +15,7 @@ services:
       NEXTAUTH_URL: http://localhost:8080
       # URL del API Gateway que corre en el localhost del PC anfitrión.
       # host.docker.internal es un DNS especial que apunta al host desde el contenedor.
-      NEXT_PUBLIC_STOCK_API_URL: http://localhost/stock
+      NEXT_PUBLIC_STOCK_API_URL: https://api.cubells.com.ar/stock
 
       # --- Secretos y configuración de Keycloak (usando un archivo .env) ---
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}

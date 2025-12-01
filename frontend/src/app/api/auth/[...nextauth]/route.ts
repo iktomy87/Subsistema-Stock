@@ -7,6 +7,9 @@ interface DecodedToken {
   realm_access?: {
     roles?: string[];
   };
+  name?: string;
+  given_name?: string;
+  family_name?: string;
   exp?: number;
 }
 
@@ -15,6 +18,8 @@ interface ExtendedJWT extends JWT {
   accessToken?: string;
   refreshToken?: string;
   accessTokenExpires?: number;
+  idToken?: string; // <-- Añadir id_token aquí
+  name?: string | null; // <-- Añadir 'name' aquí
   roles?: string[];
   error?: string;
 }
@@ -22,6 +27,9 @@ interface ExtendedJWT extends JWT {
 // Extender el tipo Session para incluir nuestros campos personalizados
 interface ExtendedSession extends Session {
   accessToken?: string;
+  user: {
+    name?: string | null; // <-- Y también aquí
+  } & Session['user'];
   roles?: string[];
   error?: string;
 }
@@ -77,7 +85,7 @@ export const authOptions: NextAuthOptions = {
       wellKnown: process.env.KEYCLOAK_WELL_KNOWN_URL!,
       authorization: {
         params: {
-          scope: "openid offline_access", // Solicitar solo los scopes necesarios
+          scope: "openid offline_access", // <-- Simplificamos al mínimo para evitar errores
         },
       },
     }),
@@ -90,13 +98,17 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, account }: { token: JWT, account: Account | null }): Promise<JWT> {
+    async jwt({ token, user, account }: { token: JWT, user: User | null, account: Account | null }): Promise<JWT> {
       const extendedToken = token as ExtendedJWT;
 
       // Inicio de sesión inicial
-      if (account) {
+      if (account && user) {
         const decodedToken: DecodedToken | null = jwt.decode(account.access_token!) as DecodedToken | null;
         
+        // Extraemos el nombre directamente del token de acceso decodificado
+        extendedToken.name = decodedToken?.name || `${decodedToken?.given_name || ''} ${decodedToken?.family_name || ''}`.trim();
+        
+        extendedToken.idToken = account.id_token; // <-- Guardar el id_token
         extendedToken.accessToken = account.access_token;
         extendedToken.refreshToken = account.refresh_token;
         extendedToken.accessTokenExpires = account.expires_at! * 1000;
@@ -117,6 +129,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: { session: Session, token: JWT }): Promise<Session> {
       const extendedSession = session as ExtendedSession;
       const extendedToken = token as ExtendedJWT;
+
+      if (session.user) {
+        extendedSession.user.name = extendedToken.name; // <-- Pasamos el nombre al objeto session.user
+      }
 
       extendedSession.accessToken = extendedToken.accessToken;
       extendedSession.roles = extendedToken.roles;
