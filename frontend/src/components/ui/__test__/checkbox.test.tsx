@@ -8,21 +8,20 @@ describe('Checkbox Component', () => {
   it('debería renderizarse en el DOM', () => {
     render(<Checkbox aria-label="Aceptar términos" />);
     
-    const checkboxElement = screen.getByRole('checkbox');
-    expect(checkboxElement).toBeInTheDocument();
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
   });
 
   it('debería estar sin marcar (unchecked) por defecto', () => {
     render(<Checkbox aria-label="Notificación" />);
-    const checkboxElement = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox');
     
-    expect(checkboxElement).not.toBeChecked();
-    expect(checkboxElement).toHaveAttribute('aria-checked', 'false');
+    expect(checkbox).not.toBeChecked();
+    expect(checkbox).toHaveAttribute('aria-checked', 'false');
   });
 
   it('debería cambiar de estado al hacer clic', async () => {
     const user = userEvent.setup();
-    
     const mockOnCheckedChange = jest.fn();
 
     render(
@@ -33,18 +32,18 @@ describe('Checkbox Component', () => {
       />
     );
 
-    const checkboxElement = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox');
 
-    await user.click(checkboxElement);
+    await user.click(checkbox);
 
     expect(mockOnCheckedChange).toHaveBeenCalledTimes(1);
   });
 
   it('debería renderizarse como deshabilitado cuando se pasa la propiedad disabled', () => {
     render(<Checkbox aria-label="No disponible" disabled />);
-    const checkboxElement = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox');
 
-    expect(checkboxElement).toBeDisabled();
+    expect(checkbox).toBeDisabled();
   });
 
   it('no debería cambiar de estado cuando está deshabilitado', async () => {
@@ -59,21 +58,21 @@ describe('Checkbox Component', () => {
       />
     );
 
-    const checkboxElement = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox');
 
-	await user.click(checkboxElement);
+	await user.click(checkbox);
 
     expect(mockOnCheckedChange).not.toHaveBeenCalled();
     
-    expect(checkboxElement).not.toBeChecked();
+    expect(checkbox).not.toBeChecked();
   });
 
   it('debería estar marcado (checked) cuando se pasa la prop checked o defaultChecked', () => {
     render(<Checkbox aria-label="Marcado" defaultChecked />);
-    const checkboxElement = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox');
 
-    expect(checkboxElement).toBeChecked();
-    expect(checkboxElement).toHaveAttribute('aria-checked', 'true');
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toHaveAttribute('aria-checked', 'true');
   });
 
 });
