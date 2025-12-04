@@ -1,9 +1,11 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
+// En el servidor (typeof window === 'undefined'), siempre usar la URL completa de la API
+// En el cliente (typeof window !== 'undefined'), usar '/api' para aprovechar los rewrites de Next.js
 const API_BASE_URL = typeof window === 'undefined'
-    ? process.env.NEXT_PUBLIC_API_URL || 'https://api.cubells.com.ar/stock'
-    : '/api';
+    ? 'https://api.cubells.com.ar/stock'  // Server-side: URL completa directa
+    : '/api';  // Client-side: rutas relativas que se reescriben via next.config.ts
 
 interface SessionWithToken {
     accessToken?: string;
