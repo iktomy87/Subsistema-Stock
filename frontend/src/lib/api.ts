@@ -1,10 +1,18 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-// IMPORTANTE: Siempre usar '/api' para aprovechar los rewrites de Next.js
-// Esto evita el error "400 Request Header Too Large" causado por tokens JWT grandes de Keycloak
-// Los rewrites de next.config.ts redirigen /api/* a https://api.cubells.com.ar/stock/*
-const API_BASE_URL = '/api';
+// IMPORTANTE: En el servidor necesitamos URL absoluta, en el cliente usamos rutas relativas
+// Las API routes manejan la autenticación y hacen proxy al backend
+function getApiBaseUrl() {
+    if (typeof window === 'undefined') {
+        // Server-side: usar URL absoluta del propio servidor Next.js
+        return process.env.NEXTAUTH_URL || 'http://localhost:8080';
+    }
+    // Client-side: usar ruta relativa (mismo origen)
+    return '';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface SessionWithToken {
     accessToken?: string;
@@ -94,7 +102,7 @@ export async function listarProductos(
         params.append('categoriaId', categoriaId.toString());
     }
 
-    const data = await fetcher<BackendPaginatedProducts>(`${API_BASE_URL}/productos?${params.toString()}`, { cache: 'no-store' });
+    const data = await fetcher<BackendPaginatedProducts>(`${API_BASE_URL}/api/productos?${params.toString()}`, { cache: 'no-store' });
 
     return {
         items: data.items ?? data.data ?? [],
@@ -107,7 +115,7 @@ export async function listarProductos(
 
 export async function obtenerProductoPorId(id: number, token?: string | null): Promise<Product> {
     // Pasar el token a fetcher
-    return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, { cache: 'no-store' }, token);
+    return fetcher<Product>(`${API_BASE_URL}/api/productos/${id}`, { cache: 'no-store' }, token);
 }
 
 export async function crearProducto(
@@ -115,7 +123,7 @@ export async function crearProducto(
     token?: string
 ): Promise<ProductoCreado> {
     // Paso 1: Crear el producto con los datos de texto/numéricos.
-    return fetcher<ProductoCreado>(`${API_BASE_URL}/productos`, {
+    return fetcher<ProductoCreado>(`${API_BASE_URL}/api/productos`, {
         method: 'POST',
         body: JSON.stringify(productData),
         headers: {
@@ -130,48 +138,48 @@ export async function uploadImage(productId: number, image: File, token?: string
     formData.append('file', image);
 
     // Asumimos que el endpoint del backend es /productos/{id}/upload
-    return fetcher<void>(`${API_BASE_URL}/productos/${productId}/upload`, {
+    return fetcher<void>(`${API_BASE_URL}/api/productos/${productId}/upload`, {
         method: 'POST',
         body: formData,
     }, token);
 }
 
 export async function actualizarProducto(id: number, body: ProductoUpdate): Promise<Product> {
-    return fetcher<Product>(`${API_BASE_URL}/productos/${id}`, {
+    return fetcher<Product>(`${API_BASE_URL}/api/productos/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(body),
     });
 }
 
 export async function eliminarProducto(id: number) {
-    return fetcher<void>(`${API_BASE_URL}/productos/${id}`, { method: 'DELETE' });
+    return fetcher<void>(`${API_BASE_URL}/api/productos/${id}`, { method: 'DELETE' });
 }
 
 // ===== Categorías =====
 export async function getCategories(token?: string): Promise<Category[]> {
-    return fetcher<Category[]>(`${API_BASE_URL}/categorias`, { cache: 'no-store' }, token);
+    return fetcher<Category[]>(`${API_BASE_URL}/api/categorias`, { cache: 'no-store' }, token);
 }
 
 export async function obtenerCategoriaPorId(id: number): Promise<Category> {
-    return fetcher<Category>(`${API_BASE_URL}/categorias/${id}`, { cache: 'no-store' });
+    return fetcher<Category>(`${API_BASE_URL}/api/categorias/${id}`, { cache: 'no-store' });
 }
 
 export async function crearCategoria(body: CategoriaInput): Promise<Category> {
-    return fetcher<Category>(`${API_BASE_URL}/categorias`, {
+    return fetcher<Category>(`${API_BASE_URL}/api/categorias`, {
         method: 'POST',
         body: JSON.stringify(body),
     });
 }
 
 export async function actualizarCategoria(id: number, body: CategoriaInput): Promise<Category> {
-    return fetcher<Category>(`${API_BASE_URL}/categorias/${id}`, {
+    return fetcher<Category>(`${API_BASE_URL}/api/categorias/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(body),
     });
 }
 
 export async function eliminarCategoria(id: number, token?: string) {
-    return fetcher<void>(`${API_BASE_URL}/categorias/${id}`, { method: 'DELETE' }, token);
+    return fetcher<void>(`${API_BASE_URL}/api/categorias/${id}`, { method: 'DELETE' }, token);
 }
 
 // ===== Reservas =====
@@ -203,7 +211,7 @@ export async function listarReservas(
         params.append('estado', estado);
     }
 
-    const data = await fetcher<BackendPaginatedReservas>(`${API_BASE_URL}/reservas?${params.toString()}`, { cache: 'no-store' });
+    const data = await fetcher<BackendPaginatedReservas>(`${API_BASE_URL}/api/reservas?${params.toString()}`, { cache: 'no-store' });
 
     return {
         items: data.items ?? data.data ?? [],
@@ -217,25 +225,25 @@ export async function obtenerReservaPorId(idReserva: number, usuarioId: number, 
     const params = new URLSearchParams({
         usuarioId: usuarioId.toString(),
     });
-    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' }, token);
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/api/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' }, token);
 }
 
 export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> {
-    return fetcher<ReservaOutput>(`${API_BASE_URL}/reservas`, {
+    return fetcher<ReservaOutput>(`${API_BASE_URL}/api/reservas`, {
         method: 'POST',
         body: JSON.stringify(input),
     });
 }
 
 export async function actualizarReserva(idReserva: number, input: ActualizarReservaInput): Promise<ReservaCompleta> {
-    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}`, {
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/api/reservas/${idReserva}`, {
         method: 'PATCH',
         body: JSON.stringify(input),
     });
 }
 
 export async function cancelarReserva(idReserva: number, input: CancelacionReservaInput, token?: string | null): Promise<void> {
-    return fetcher<void>(`${API_BASE_URL}/reservas/${idReserva}`, {
+    return fetcher<void>(`${API_BASE_URL}/api/reservas/${idReserva}`, {
         method: 'DELETE',
         body: JSON.stringify(input),
     }, token);
