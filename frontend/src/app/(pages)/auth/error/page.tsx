@@ -1,6 +1,9 @@
-import { useSearchParams } from 'next/navigation';
+'use client';
 
-export default function ErrorPage() {
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
+function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -10,5 +13,13 @@ export default function ErrorPage() {
       <p>An error occurred during authentication.</p>
       {error && <p>Error: {error}</p>}
     </div>
+  );
+}
+
+export default function ErrorPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ErrorContent />
+    </Suspense>
   );
 }

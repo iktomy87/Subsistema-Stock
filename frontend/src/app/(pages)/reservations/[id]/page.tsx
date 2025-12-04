@@ -2,17 +2,18 @@ import { obtenerReservaPorId, cancelarReserva } from "@/lib/api";
 import { redirect } from "next/navigation";
 import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 
 interface CustomSession extends Session {
     accessToken?: string;
 }
 
-export default async function ReservationDetailPage({ params }: { params: { id: string } }) {
+export default async function ReservationDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session: CustomSession | null = await getServerSession(authOptions);
     const token = session?.accessToken;
 
-    const idReserva = Number(params.id);
+    const { id: idParam } = await params;
+    const idReserva = Number(idParam);
     // TODO: Get usuarioId from session
     const usuarioId = 2;
     const info = await obtenerReservaPorId(idReserva, usuarioId, token);

@@ -12,17 +12,18 @@ import {
 } from '@/components/ui/breadcrumb';
 import { notFound } from 'next/navigation';
 import { getServerSession, Session } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 
 interface CustomSession extends Session {
     accessToken?: string;
 }
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session: CustomSession | null = await getServerSession(authOptions);
     const token = session?.accessToken;
 
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
     const product = await obtenerProductoPorId(id, token);
 
     if (!product) {
