@@ -4,7 +4,7 @@ import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, Rese
 // IMPORTANTE: Siempre usar '/api' para aprovechar los rewrites de Next.js
 // Esto evita el error "400 Request Header Too Large" causado por tokens JWT grandes de Keycloak
 // Los rewrites de next.config.ts redirigen /api/* a https://api.cubells.com.ar/stock/*
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://api.cubells.com.ar/stock';
 
 interface SessionWithToken {
     accessToken?: string;
