@@ -34,16 +34,20 @@ async function handleDelete(formData: FormData) {
 }
 
 export default async function CategoriesPage() {
+    console.log('=== Categories Page Debug ===');
     const session: Session | null = await getServerSession(authOptions);
+    console.log('Session exists:', !!session);
+    console.log('Access token exists:', !!session?.accessToken);
     
     let cats = [];
     let error = null;
     
     try {
         cats = await getCategories(session?.accessToken);
+        console.log('Categories loaded:', cats.length);
     } catch (err) {
         console.error('Error cargando categorías:', err);
-        error = 'Error al cargar las categorías';
+        error = err instanceof Error ? err.message : 'Error al cargar las categorías';
     }
 
     return (
