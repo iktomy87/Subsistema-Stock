@@ -5,15 +5,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/categorias/:path*',
-        destination: 'http://backend:3000/categorias/:path*',
+        destination: 'https://api.cubells.com.ar/stock/categorias/:path*',
       },
       {
         source: '/api/productos/:path*',
-        destination: 'http://backend:3000/productos/:path*',
+        destination: 'https://api.cubells.com.ar/stock/productos/:path*',
       },
       {
         source: '/api/reservas/:path*',
-        destination: 'http://backend:3000/reservas/:path*',
+        destination: 'https://api.cubells.com.ar/stock/reservas/:path*',
       },
     ]
   },
