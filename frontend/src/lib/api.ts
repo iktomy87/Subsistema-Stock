@@ -5,7 +5,11 @@ import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, Rese
 // Las API routes manejan la autenticación y hacen proxy al backend
 function getApiBaseUrl() {
     if (typeof window === 'undefined') {
-        // Server-side: usar URL absoluta del propio servidor Next.js
+        // Server-side: Vercel u otro entorno serverless
+        if (process.env.VERCEL_URL) {
+            return `https://${process.env.VERCEL_URL}`;
+        }
+        // Fallback para otros entornos (ej. Docker) o si NEXTAUTH_URL está explícitamente seteado
         return process.env.NEXTAUTH_URL || 'http://localhost:8080';
     }
     // Client-side: usar ruta relativa (mismo origen)
@@ -26,9 +30,6 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
         if (sessionToken === undefined) {
             const session = await getSession() as SessionWithToken | null;
             sessionToken = session?.accessToken;
-            console.log('Fetcher - Session Client-Side:', session); // Log lado cliente
-        } else {
-            console.log('Fetcher - Token Passed Server-Side:', sessionToken?.substring(0, 30) + '...'); // Log lado servidor
         }
 
 
@@ -37,9 +38,6 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
 
         if (sessionToken) { // Usar la variable sessionToken
             newOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
-            console.log('Fetcher - Token Added:', newOptions.headers['Authorization']?.substring(0, 30) + '...');
-        } else {
-            console.log('Fetcher - No token available or passed.');
         }
 
         // No establecer Content-Type si el body es FormData
