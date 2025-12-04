@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -11,14 +11,8 @@ const nextConfig: NextConfig = {
     // your project has TypeScript errors.
     ignoreBuildErrors: true,
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://api.cubells.com.ar/stock/:path*',
-      },
-    ]
-  },
+  // NOTA: Los rewrites ya no son necesarios porque ahora usamos API routes que actúan como proxy
+  // Las API routes manejan la autenticación y hacen requests al backend directamente
 };
 
 export default nextConfig;
