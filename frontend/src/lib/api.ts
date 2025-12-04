@@ -1,11 +1,10 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-// En el servidor (typeof window === 'undefined'), siempre usar la URL completa de la API
-// En el cliente (typeof window !== 'undefined'), usar '/api' para aprovechar los rewrites de Next.js
-const API_BASE_URL = typeof window === 'undefined'
-    ? 'https://api.cubells.com.ar/stock'  // Server-side: URL completa directa
-    : '/api';  // Client-side: rutas relativas que se reescriben via next.config.ts
+// IMPORTANTE: Siempre usar '/api' para aprovechar los rewrites de Next.js
+// Esto evita el error "400 Request Header Too Large" causado por tokens JWT grandes de Keycloak
+// Los rewrites de next.config.ts redirigen /api/* a https://api.cubells.com.ar/stock/*
+const API_BASE_URL = '/api';
 
 interface SessionWithToken {
     accessToken?: string;
