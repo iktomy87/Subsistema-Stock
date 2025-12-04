@@ -154,8 +154,45 @@ export async function eliminarProducto(id: number) {
 }
 
 // ===== Categorías =====
+// Agregar esta versión mejorada al archivo lib/api.ts
+
 export async function getCategories(token?: string): Promise<Category[]> {
-    return fetcher<Category[]>(`${API_BASE_URL}/api/categorias`, { cache: 'no-store' }, token);
+    try {
+        console.log('getCategories called with token:', !!token);
+        
+        // En el servidor, pasar el token en el header
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const url = `${API_BASE_URL}/api/categorias`;
+        console.log('Fetching categories from:', url);
+        
+        const response = await fetch(url, { 
+            cache: 'no-store',
+            headers,
+        });
+        
+        console.log('Categories response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Categories fetch error:', response.status, errorText);
+            throw new Error(`Error al obtener categorías: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Categories fetched:', Array.isArray(data) ? data.length : 'not an array');
+        
+        return data;
+    } catch (error) {
+        console.error('Error in getCategories:', error);
+        throw error;
+    }
 }
 
 export async function obtenerCategoriaPorId(id: number): Promise<Category> {
