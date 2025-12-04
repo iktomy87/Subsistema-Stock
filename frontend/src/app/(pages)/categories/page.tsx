@@ -1,13 +1,50 @@
-import { getCategories, eliminarCategoria } from "@/lib/api";
+import { getCategories } from "@/lib/api";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { Session } from "next-auth";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+// Definir la Server Action fuera del componente
+async function handleDelete(formData: FormData) {
+    "use server";
+    
+    const categoryId = formData.get('categoryId') as string;
+    
+    try {
+        const session: Session | null = await getServerSession(authOptions);
+        
+        if (!session?.accessToken) {
+            throw new Error('No autorizado');
+        }
+
+        // Importar dinámicamente para evitar problemas de build
+        const { eliminarCategoria } = await import("@/lib/api");
+        
+        await eliminarCategoria(Number(categoryId), session.accessToken);
+        
+        // Revalidar la página para reflejar cambios
+        revalidatePath('/categories');
+    } catch (error) {
+        console.error('Error al eliminar categoría:', error);
+        throw error;
+    }
+}
+
 export default async function CategoriesPage() {
     const session: Session | null = await getServerSession(authOptions);
-    const cats = await getCategories(session?.accessToken);
+    
+    let cats = [];
+    let error = null;
+    
+    try {
+        cats = await getCategories(session?.accessToken);
+    } catch (err) {
+        console.error('Error cargando categorías:', err);
+        error = 'Error al cargar las categorías';
+    }
 
     return (
         <section className="space-y-4">
@@ -16,7 +53,13 @@ export default async function CategoriesPage() {
                 <a href="/categories/new" className="ml-auto border px-3 py-1 rounded">Nueva</a>
             </header>
 
-            {cats.length === 0 ? (
+            {error && (
+                <div className="text-red-500 border border-red-300 rounded p-4 bg-red-50">
+                    {error}
+                </div>
+            )}
+
+            {!error && cats.length === 0 ? (
                 <div className="text-sm text-gray-500 border rounded p-6">No hay categorías.</div>
             ) : (
                 <table className="w-full border rounded">
@@ -31,14 +74,14 @@ export default async function CategoriesPage() {
                             <tr key={c.id} className="border-t">
                                 <td className="p-2">{c.nombre}</td>
                                 <td className="p-2 text-right">
-                                    {/* Si luego agregás editar: <a className="underline mr-3" href={`/categories/${c.id}/edit`}>Editar</a> */}
-                                    <form action={async () => {
-                                        "use server";
-                                        const session: Session | null = await getServerSession(authOptions);
-                                        await eliminarCategoria(c.id, session?.accessToken);
-                                        return Response.redirect("/categories");
-                                    }}>
-                                        <button className="underline text-red-700">Eliminar</button>
+                                    <form action={handleDelete}>
+                                        <input type="hidden" name="categoryId" value={c.id} />
+                                        <button 
+                                            type="submit"
+                                            className="underline text-red-700 hover:text-red-900"
+                                        >
+                                            Eliminar
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
