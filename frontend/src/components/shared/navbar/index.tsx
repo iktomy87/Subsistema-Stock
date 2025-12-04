@@ -32,7 +32,7 @@ const Navbar = () => {
         <div className="flex items-center">
           <h1 className="text-xl font-bold">
             {status === "authenticated" && session.user
-              ? `Bienvenido, ${session.user.name || session.user.email}`
+              ? `Bienvenido, ${session.user.name || session.user.email || 'Usuario'}` // Asegura un fallback
               : "Dashboard"}
           </h1>
         </div>
@@ -74,7 +74,9 @@ const Navbar = () => {
                   ) : (
                     <User className="mr-2" />
                   )}
-                  <span className="hidden md:inline">{session.user.name || session.user.email}</span>
+                  <span className="hidden md:inline">
+                    {session.user.name || session.user.email || 'Mi Cuenta'}
+                  </span>
                   <ChevronDown className="ml-1" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>

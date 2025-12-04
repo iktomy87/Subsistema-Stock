@@ -1,11 +1,11 @@
 import { getSession } from 'next-auth/react';
 import { PaginatedProducts, Category, Product, ReservaInput, ReservaOutput, ReservaCompleta, CancelacionReservaInput, ActualizarReservaInput, ProductoInput, ProductoUpdate, ProductoCreado, CategoriaInput, PaginatedReservas } from './definitions';
 
-const API_BASE_URL = typeof window === 'undefined' 
-    ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000' 
+const API_BASE_URL = typeof window === 'undefined'
+    ? process.env.NEXT_PUBLIC_API_URL || 'http://backend:3000'
     : '/api';
 
-interface Session {
+interface SessionWithToken {
     accessToken?: string;
 }
 
@@ -14,12 +14,12 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
         let sessionToken = token; // Usar el token pasado si existe
 
         // Si no se pasó un token, intentar obtenerlo de la sesión (lado cliente)
-        if (sessionToken === undefined) { 
-            const session: Session | null = await getSession();
+        if (sessionToken === undefined) {
+            const session = await getSession() as SessionWithToken | null;
             sessionToken = session?.accessToken;
             console.log('Fetcher - Session Client-Side:', session); // Log lado cliente
         } else {
-             console.log('Fetcher - Token Passed Server-Side:', sessionToken?.substring(0, 30) + '...'); // Log lado servidor
+            console.log('Fetcher - Token Passed Server-Side:', sessionToken?.substring(0, 30) + '...'); // Log lado servidor
         }
 
 
@@ -30,7 +30,7 @@ async function fetcher<T>(url: string, options: RequestInit = {}, token?: string
             newOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
             console.log('Fetcher - Token Added:', newOptions.headers['Authorization']?.substring(0, 30) + '...');
         } else {
-             console.log('Fetcher - No token available or passed.');
+            console.log('Fetcher - No token available or passed.');
         }
 
         // No establecer Content-Type si el body es FormData
@@ -92,7 +92,7 @@ export async function listarProductos(
     if (categoriaId) {
         params.append('categoriaId', categoriaId.toString());
     }
-    
+
     const data = await fetcher<BackendPaginatedProducts>(`${API_BASE_URL}/productos?${params.toString()}`, { cache: 'no-store' });
 
     return {
@@ -127,11 +127,11 @@ export async function uploadImage(productId: number, image: File, token?: string
     const formData = new FormData();
     // El nombre 'file' debe coincidir con el que espera el backend (usualmente definido en el FileInterceptor)
     formData.append('file', image);
-  
+
     // Asumimos que el endpoint del backend es /productos/{id}/upload
     return fetcher<void>(`${API_BASE_URL}/productos/${productId}/upload`, {
-      method: 'POST',
-      body: formData,
+        method: 'POST',
+        body: formData,
     }, token);
 }
 
@@ -201,7 +201,7 @@ export async function listarReservas(
     if (estado) {
         params.append('estado', estado);
     }
-    
+
     const data = await fetcher<BackendPaginatedReservas>(`${API_BASE_URL}/reservas?${params.toString()}`, { cache: 'no-store' });
 
     return {
@@ -212,11 +212,11 @@ export async function listarReservas(
     };
 }
 
-export async function obtenerReservaPorId(idReserva: number): Promise<ReservaCompleta> {
+export async function obtenerReservaPorId(idReserva: number, usuarioId: number, token?: string | null): Promise<ReservaCompleta> {
     const params = new URLSearchParams({
-        // usuarioId: usuarioId.toString(),
+        usuarioId: usuarioId.toString(),
     });
-    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' });
+    return fetcher<ReservaCompleta>(`${API_BASE_URL}/reservas/${idReserva}?${params.toString()}`, { cache: 'no-store' }, token);
 }
 
 export async function crearReserva(input: ReservaInput): Promise<ReservaOutput> {
@@ -233,9 +233,9 @@ export async function actualizarReserva(idReserva: number, input: ActualizarRese
     });
 }
 
-export async function cancelarReserva(idReserva: number, input: CancelacionReservaInput): Promise<void> {
+export async function cancelarReserva(idReserva: number, input: CancelacionReservaInput, token?: string | null): Promise<void> {
     return fetcher<void>(`${API_BASE_URL}/reservas/${idReserva}`, {
         method: 'DELETE',
         body: JSON.stringify(input),
-    });
+    }, token);
 }

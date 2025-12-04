@@ -103,28 +103,28 @@ export interface ReservaOutput {
 }
 
 export interface ReservaCompleta {
-    idReserva: number;
-    idCompra: string;
-    usuarioId: number;
-    estado: 'confirmado' | 'pendiente' | 'cancelado';
-    expiresAt: string;
-    fechaCreacion: string;
-    fechaActualizacion: string;
-    productos: {
-        idProducto: number;
-        nombre: string;
-        cantidad: number;
-        precioUnitario: number;
-    }[];
+  idReserva: number;
+  idCompra: string;
+  usuarioId: number;
+  estado: 'confirmado' | 'pendiente' | 'cancelado';
+  expiresAt: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  productos: {
+    idProducto: number;
+    nombre: string;
+    cantidad: number;
+    precioUnitario: number;
+  }[];
 }
 
 export interface ActualizarReservaInput {
-    usuarioId: number;
-    estado: 'confirmado' | 'pendiente' | 'cancelado';
+  usuarioId: number;
+  estado: 'confirmado' | 'pendiente' | 'cancelado';
 }
 
 export interface CancelacionReservaInput {
-    motivo: string;
+  motivoCancelacion: string;
 }
 
 

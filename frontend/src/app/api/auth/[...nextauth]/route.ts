@@ -64,6 +64,7 @@ async function refreshAccessToken(token: ExtendedJWT): Promise<ExtendedJWT> {
       accessToken: refreshedTokens.access_token,
       accessTokenExpires: Date.now() + (refreshedTokens.expires_in * 1000),
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Mantener el refresh token anterior si no se envía uno nuevo
+      name: decodedToken?.name || `${decodedToken?.given_name || ''} ${decodedToken?.family_name || ''}`.trim() || token.name, // Extraer o mantener el nombre
       roles: decodedToken?.realm_access?.roles,
       error: undefined, // Limpiar cualquier error anterior
     };
@@ -103,12 +104,16 @@ export const authOptions: NextAuthOptions = {
 
       // Inicio de sesión inicial
       if (account && user) {
+        // Decodificar el access_token para obtener roles y otro info
         const decodedToken: DecodedToken | null = jwt.decode(account.access_token!) as DecodedToken | null;
 
-        // Extraemos el nombre directamente del token de acceso decodificado
-        extendedToken.name = decodedToken?.name || `${decodedToken?.given_name || ''} ${decodedToken?.family_name || ''}`.trim();
+        // CONSTRUCCIÓN DEL NOMBRE
+        const fullName = `${decodedToken?.given_name || ''} ${decodedToken?.family_name || ''}`.trim();
 
-        extendedToken.idToken = account.id_token; // <-- Guardar el id_token
+        // MODIFICACIÓN CLAVE: Usar fullName, o email/preferred_username como fallback
+        extendedToken.name = fullName || decodedToken?.name || user.email || 'Usuario';
+
+        extendedToken.idToken = account.id_token;
         extendedToken.accessToken = account.access_token;
         extendedToken.refreshToken = account.refresh_token;
         extendedToken.accessTokenExpires = account.expires_at! * 1000;
