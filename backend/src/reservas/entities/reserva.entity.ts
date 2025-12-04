@@ -28,6 +28,12 @@ export class Reserva {
   @Column({ name: 'fecha_actualizacion', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   fechaActualizacion: Date;
 
+  @Column({ name: 'motivo_cancelacion', nullable: true})
+  motivoCancelacion: string;
+
+  @Column({ name: 'fecha_cancelacion', type: 'timestamp', nullable: true})
+  fechaCancelacion: Date;
+
   @OneToMany(() => DetalleReserva, detalle => detalle.reserva, { cascade: true })
   detalles: DetalleReserva[];
 }

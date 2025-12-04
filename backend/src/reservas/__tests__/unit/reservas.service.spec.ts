@@ -6,7 +6,7 @@ import { ReservasService } from '../../reservas.service';
 import { ProductosService } from '../../../productos/productos.service';
 import { Reserva } from '../../entities/reserva.entity';
 import { DetalleReserva } from '../../entities/detalle-reserva.entity';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ReservaInputDto } from '../../dto/create-reserva.dto';
 import { UpdateReservaDto } from '../../dto/update-reserva.dto';
 import { CancelacionReservaInputDto } from 'src/reservas/dto/delete-reserva.dto';
@@ -121,13 +121,13 @@ describe('ReservasService', () => {
 
   describe('liberar', () => {
     it('debería liberar el stock y cancelar la reserva', async () => {
-      const liberacionInput: CancelacionReservaInputDto = {motivo: "Encontré otra oferta"};
+      const liberacionInput: CancelacionReservaInputDto = {motivoCancelacion: "Encontré otra oferta"};
       const mockReserva = {
         id: 1,
-        estado: 'confirmado',
+        estado: 'pendiente',
         detalles: [{ productoId: 1, cantidad: 2 }],
       };
-
+      
       mockReservasRepository.findOne.mockResolvedValue(mockReserva);
       mockProductosService.liberarStock.mockResolvedValue(undefined);
       mockReservasRepository.save.mockResolvedValue({ ...mockReserva, estado: 'cancelado' });
@@ -136,17 +136,53 @@ describe('ReservasService', () => {
 
       expect(result.mensaje).toBe('Stock liberado exitosamente');
       expect(mockProductosService.liberarStock).toHaveBeenCalledWith([{ idProducto: 1, cantidad: 2 }]);
-      expect(mockReservasRepository.save).toHaveBeenCalledWith({ ...mockReserva, estado: 'cancelado' });
+      expect(mockReservasRepository.save).toHaveBeenCalledWith({ 
+        ...mockReserva, 
+        estado: 'cancelado',
+        motivoCancelacion: liberacionInput.motivoCancelacion, // El motivo añadido
+        fechaCancelacion: expect.any(Date),
+      });
     });
 
     it('debería lanzar NotFoundException si la reserva no existe', async () => {
-      const liberacionInput: CancelacionReservaInputDto = {motivo: "Encontré otra oferta"};
+      const liberacionInput: CancelacionReservaInputDto = {motivoCancelacion: "Encontré otra oferta"};
       const idInexistente = 999;
       
       mockReservasRepository.findOne.mockResolvedValue(null);
 
       await expect(service.liberar(idInexistente, liberacionInput)).rejects.toThrow(NotFoundException);
       await expect(service.liberar(idInexistente, liberacionInput)).rejects.toThrow('Reserva no encontrada');
+    });
+    
+    it('debería lanzar BadRequestException si la reserva esta confirmada', async () => {
+      const liberacionInput: CancelacionReservaInputDto = {motivoCancelacion: "Encontré otra oferta"};
+      const mockReserva = {
+        id: 1,
+        estado: 'confirmado',
+        detalles: [{ productoId: 1, cantidad: 2 }],
+      };
+      
+      mockReservasRepository.findOne.mockResolvedValue(mockReserva);
+
+      await expect(service.liberar(mockReserva.id, liberacionInput)).rejects.toThrow(BadRequestException);
+      await expect(service.liberar(mockReserva.id, liberacionInput)).rejects.toThrow('No se puede cancelar una reserva ya confirmada');
+    });
+
+    it('debería retornar un mensaje indicando que la reserva ya está cancelada', async () => {
+      const liberacionInput: CancelacionReservaInputDto = {motivoCancelacion: "Encontré otra oferta"};
+      const mockReserva = {
+        id: 1,
+        estado: 'cancelado',
+        detalles: [{ productoId: 1, cantidad: 2 }],
+      };
+      
+      mockReservasRepository.findOne.mockResolvedValue(mockReserva);
+
+      await expect(service.liberar(mockReserva.id, liberacionInput)).resolves.toEqual({
+        mensaje: 'La reserva ya se encontraba cancelada',
+      });
+      expect(mockProductosService.liberarStock).not.toHaveBeenCalled();
+      expect(mockReservasRepository.save).not.toHaveBeenCalled()
     });
   });
 
@@ -234,6 +270,8 @@ describe('ReservasService', () => {
       expect(result.data).toEqual(mockReservas);
       expect(result.meta!.total).toBe(totalReservas);
       expect(result.meta!.page).toBe(options.page);
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('reserva.detalles', 'detalles');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('reserva.fechaCreacion', 'DESC');
       });
     
     it('debería retornar todas las reservas de un usuario sin paginación', async () => {
@@ -253,6 +291,8 @@ describe('ReservasService', () => {
       expect(mockQueryBuilder.take).not.toHaveBeenCalled(); 
       expect(result.data).toEqual(mockReservas);
       expect(result.meta).toBeUndefined();
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('reserva.detalles', 'detalles');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('reserva.fechaCreacion', 'DESC');
     });
   });
 });

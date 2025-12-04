@@ -6,6 +6,8 @@ import { Producto } from '../../productos/entities/producto.entity';
 import { Reserva } from '../../reservas/entities/reserva.entity';
 import { Dimensiones } from '../../productos/entities/dimensiones.entity';
 import { UbicacionAlmacen } from '../../productos/entities/ubicacion-almacen.entity';
+import { DetalleReserva } from 'src/reservas/entities/detalle-reserva.entity';
+import { ImagenProducto } from 'src/productos/entities/imagen-producto.entity';
 
 @Injectable()
 export class SeedsService {
@@ -20,54 +22,72 @@ export class SeedsService {
     private readonly dimensionesRepository: Repository<Dimensiones>,
     @InjectRepository(UbicacionAlmacen)
     private readonly ubicacionRepository: Repository<UbicacionAlmacen>,
-  ) {}
+    @InjectRepository(DetalleReserva)
+    private readonly detalleRepository: Repository<DetalleReserva>,
+  ) { }
 
+  /**
+   * Carga datos de prueba en modo UPSERT. 
+   * Agrega solo los datos faltantes (inserta si no existe, omite si existe).
+   */
   async loadData() {
-    // --- INICIO DE MODIFICACIÓN ---
-    // 1. Verificar si ya hay datos en la base de datos
-    const count = await this.categoriaRepository.count();
+    console.log('Iniciando verificación y carga de datos de prueba (Modo UPSERT)...');
 
-    // 2. Si hay datos (count > 0), omitir el seeding
-    if (count > 0) {
-      console.log('La base de datos ya tiene datos. Omitiendo el seeding.');
-      return;
+    // 1. Eliminar la lógica de chequeo inicial de conteo de la tabla.
+    // 2. Eliminar clearData() para no borrar los datos existentes.
+
+    // 3. Ejecutar las cargas en orden de dependencia:
+    const categoriasMap = await this.loadCategorias();
+    const productosMap = await this.loadProductos(categoriasMap);
+
+    // loadReservas necesita un array de productos
+    await this.loadReservas(Object.values(productosMap));
+
+    console.log('Carga de datos de prueba finalizada.');
+  }
+
+  /**
+   * Carga categorías en modo UPSERT. Verifica por nombre único.
+   * @returns Un mapa de categorías existentes/creadas indexadas por nombre para su uso posterior.
+   */
+  private async loadCategorias(): Promise<Record<string, Categoria>> {
+    const categoriasSeed = [
+      { nombre: 'Electrónicos', descripcion: 'Dispositivos y gadgets tecnológicos' },
+      { nombre: 'Ropa', descripcion: 'Prendas de vestir' },
+      { nombre: 'Libros', descripcion: 'Obras literarias y educativas' },
+      { nombre: 'Deportes', descripcion: 'Artículos y equipo deportivo' },
+      // Aquí puedes agregar nuevas categorías y solo se crearán si no existen.
+    ];
+
+    const loadedCategorias: Record<string, Categoria> = {};
+
+    for (const data of categoriasSeed) {
+      // 1. Verificar existencia por campo único: nombre
+      let categoria = await this.categoriaRepository.findOne({
+        where: { nombre: data.nombre },
+      });
+
+      if (!categoria) {
+        // 2. Si no existe, se crea
+        categoria = this.categoriaRepository.create(data);
+        await this.categoriaRepository.save(categoria);
+        console.log(`[UPSERT - Categoria] Creada: ${data.nombre}`);
+      } else {
+        console.log(`[UPSERT - Categoria] Ya existe: ${data.nombre}`);
+      }
+      loadedCategorias[categoria.nombre] = categoria;
     }
 
-    // 3. Si no hay datos, proceder con el seeding
-    console.log('Base de datos vacía. Iniciando el seeding...');
-    await this.clearData();
-    // --- FIN DE MODIFICACIÓN ---
-
-    const categorias = await this.loadCategorias();
-    const productos = await this.loadProductos(categorias);
-    console.log('Seed data loaded successfully');
+    return loadedCategorias;
   }
 
-  private async clearData() {
-    await this.reservaRepository.query('TRUNCATE TABLE "reservas" CASCADE;');
-    await this.productoRepository.query('TRUNCATE TABLE "productos" CASCADE;');
-    await this.categoriaRepository.query('TRUNCATE TABLE "categorias" CASCADE;');
-    await this.dimensionesRepository.query(
-      'TRUNCATE TABLE "dimensiones" CASCADE;',
-    );
-    await this.ubicacionRepository.query(
-      'TRUNCATE TABLE "ubicacion_almacen" CASCADE;',
-    );
-  }
-
-  private async loadCategorias(): Promise<Categoria[]> {
-    const categoriasData = [
-      { nombre: 'Electrónicos' },
-      { nombre: 'Ropa' },
-      { nombre: 'Libros' },
-    ];
-    const categorias = this.categoriaRepository.create(categoriasData);
-    await this.categoriaRepository.save(categorias);
-    return categorias;
-  }
-
-  private async loadProductos(categorias: Categoria[]): Promise<Producto[]> {
-    const productosData = [
+  /**
+   * Carga productos en modo UPSERT. La clave es NO usar UPSERT para Dimensiones y UbicacionAlmacen
+   * para evitar el error 1:1, forzando la creación de nuevas instancias para cada producto nuevo.
+   * @returns Un mapa de productos existentes/creados indexados por nombre.
+   */
+  private async loadProductos(categoriasMap: Record<string, Categoria>): Promise<Record<string, Producto>> {
+    const productosData: any[] = [
       {
         nombre: 'Laptop Pro',
         descripcion: 'Una laptop potente para profesionales',
@@ -87,10 +107,10 @@ export class SeedsService {
           country: 'AR',
         },
         imagenes: [
-          { url: 'https://i.imgur.com/L6a2b3v.jpeg', esPrincipal: true },
-          { url: 'https://i.imgur.com/L6a2b3v.jpeg', esPrincipal: false },
+          { url: 'https://i.imgur.com/JyFkdfP.png', esPrincipal: true },
+          { url: 'https://i.imgur.com/JyFkdfP.png', esPrincipal: false },
         ],
-        categorias: [categorias.find((c) => c.nombre === 'Electrónicos')!],
+        categorias: ['Electrónicos'],
       },
       {
         nombre: 'Camiseta de Algodón',
@@ -111,9 +131,11 @@ export class SeedsService {
           country: 'AR',
         },
         imagenes: [
-          { url: 'https://i.imgur.com/fQeImW2.jpeg', esPrincipal: true },
+          { url: 'https://i.imgur.com/4pXnYM1.jpeg', esPrincipal: true },
+          { url: 'https://i.imgur.com/ph9r226.jpeg', esPrincipal: false },
+          { url: 'https://i.imgur.com/7weIgiB.jpeg', esPrincipal: false },
         ],
-        categorias: [categorias.find((c) => c.nombre === 'Ropa')!],
+        categorias: ['Ropa'],
       },
       {
         nombre: 'El Gran Gatsby',
@@ -134,14 +156,201 @@ export class SeedsService {
           country: 'AR',
         },
         imagenes: [
-          { url: 'https://i.imgur.com/d3b0b2e.jpeg', esPrincipal: true },
+          { url: 'https://i.imgur.com/f6Km8P2.jpeg', esPrincipal: true },
         ],
-        categorias: [categorias.find((c) => c.nombre === 'Libros')!],
+        categorias: ['Libros'],
+      },
+      {
+        nombre: 'Bicicleta Bmx',
+        descripcion: 'La Kush 1 es una bicicleta BMX 20 de nivel de entrada y es perfecta para principiantes que quieran recorrer las calles o el parque',
+        precio: 370000.0,
+        stockDisponible: 15,
+        pesoKg: 7.0,
+        dimensiones: {
+          largoCm: 120.0,
+          anchoCm: 40.5,
+          altoCm: 100.5,
+        },
+        ubicacion: {
+          street: 'Av. Sarmiento 550',
+          city: 'Resistencia',
+          state: 'Chaco',
+          postalCode: 'H3500ABC',
+          country: 'AR',
+        },
+        imagenes: [
+          { url: 'https://i.imgur.com/9x2yX3R.jpeg', esPrincipal: true },
+        ],
+        categorias: ['Deportes'],
+      },
+      {
+        nombre: 'Lenovo Tablet',
+        descripcion: 'Tablet familiar con una impresionante pantalla hasta FHD de 10"',
+        precio: 600000.0,
+        stockDisponible: 20,
+        pesoKg: 1.5,
+        dimensiones: {
+          largoCm: 25.0,
+          anchoCm: 3.0,
+          altoCm: 26.5,
+        },
+        ubicacion: {
+          street: 'Av. Sarmiento 550',
+          city: 'Resistencia',
+          state: 'Chaco',
+          postalCode: 'H3500ABC',
+          country: 'AR',
+        },
+        imagenes: [],
+        categorias: ['Electrónicos'],
+      },
+      {
+        nombre: 'Pelota Mundial 2014',
+        descripcion: 'Pelota original utilizada durante el Mundial 2014',
+        precio: 60000.0,
+        stockDisponible: 200,
+        pesoKg: 0.6,
+        dimensiones: {
+          largoCm: 15.0,
+          anchoCm: 8.0,
+          altoCm: 15.5,
+        },
+        ubicacion: {
+          street: 'Av. Sarmiento 550',
+          city: 'Resistencia',
+          state: 'Chaco',
+          postalCode: 'H3500ABC',
+          country: 'AR',
+        },
+        imagenes: [],
+        categorias: ['Deportes'],
       },
     ];
 
-    const productos = this.productoRepository.create(productosData);
-    await this.productoRepository.save(productos);
-    return productos;
+    const loadedProductos: Record<string, Producto> = {};
+
+    for (const data of productosData) {
+      // 1. Verificar existencia del Producto por nombre (campo único principal)
+      const existingProducto = await this.productoRepository.findOne({
+        where: { nombre: data.nombre },
+      });
+
+      if (existingProducto) {
+        console.log(`[UPSERT - Producto] Ya existe: ${data.nombre}. Omitiendo inserción.`);
+        loadedProductos[existingProducto.nombre] = existingProducto;
+        continue; // Pasar al siguiente producto si ya existe
+      }
+
+      // ----------------------------------------------------------------------
+      // CREAR SIEMPRE NUEVAS INSTANCIAS (NO UPSERT) para entidades 1:1.
+      // ----------------------------------------------------------------------
+
+      // 2. CREACIÓN de Dimensiones
+      const dimensiones = await this.dimensionesRepository.save(data.dimensiones);
+      console.log(`[CREACIÓN - Dimensiones] Creada para ${data.nombre}`);
+
+      // 3. CREACIÓN de UbicacionAlmacen
+      const ubicacion = await this.ubicacionRepository.save(data.ubicacion);
+      console.log(`[CREACIÓN - Ubicacion] Creada para ${data.nombre}`);
+
+      // ----------------------------------------------------------------------
+
+      // 4. Mapear categorías ya existentes/creadas
+      const categorias = data.categorias.map((nombre: string) => categoriasMap[nombre]).filter(c => c);
+
+      // 5. Crear y guardar el Producto (INSERT)
+      const productoToCreate = this.productoRepository.create({
+        ...data,
+        dimensiones,
+        ubicacion,
+        categorias,
+        imagenes: data.imagenes,
+      });
+
+      const producto = await this.productoRepository.save(productoToCreate) as unknown as Producto;
+      console.log(`[UPSERT - Producto] Creado: ${data.nombre}`);
+      loadedProductos[producto.nombre] = producto;
+    }
+
+    return loadedProductos;
+  };
+
+  /**
+   * Carga reservas en modo UPSERT. Verifica por idCompra único.
+   */
+  private async loadReservas(productos: Producto[]): Promise<Reserva[]> {
+    // La lógica de búsqueda de productos sigue siendo necesaria para mapear la data
+    // Type 'Producto | undefined'
+    const laptop = productos.find((p) => p.nombre === 'Laptop Pro');
+    const camiseta = productos.find((p) => p.nombre === 'Camiseta de Algodón');
+    const libro = productos.find((p) => p.nombre === 'El Gran Gatsby');
+    const bicicleta = productos.find((p) => p.nombre === 'Bicicleta Bmx');
+    const tablet = productos.find((p) => p.nombre === 'Lenovo Tablet');
+    const pelota = productos.find((p) => p.nombre === 'Pelota Mundial 2014');
+
+    if (!laptop || !camiseta || !libro || !bicicleta || !pelota || !tablet) {
+      console.error(
+        'Productos requeridos para el seed de reservas no encontrados. Omitiendo seed de reservas.',
+      );
+      return [];
+    }
+
+    const reservasSeedData = [
+      {
+        idCompra: '123ABC',
+        usuarioId: 2,
+        estado: 'confirmado',
+        expiresAt: new Date(),
+        detalles: [
+          // APLICACIÓN DEL OPERADOR NO-NULO (!)
+          { cantidad: 1, producto: laptop! },
+          { cantidad: 3, producto: bicicleta! },
+          { cantidad: 6, producto: camiseta! },
+          { cantidad: 7, producto: tablet! },
+          { cantidad: 2, producto: pelota! },
+          { cantidad: 30, producto: libro! },
+        ],
+      },
+      {
+        idCompra: '321CBA',
+        usuarioId: 2,
+        estado: 'pendiente',
+        expiresAt: new Date(),
+        detalles: [
+          // APLICACIÓN DEL OPERADOR NO-NULO (!)
+          { cantidad: 2, producto: camiseta! },
+          { cantidad: 2, producto: pelota! },
+        ],
+      },
+      // APLICACIÓN DEL OPERADOR NO-NULO (!) a los demás detalles.
+      { idCompra: '111AAA', usuarioId: 3, estado: 'pendiente', expiresAt: new Date(), detalles: [{ cantidad: 90, producto: libro! }, { cantidad: 28, producto: camiseta! }] },
+      { idCompra: '222AAA', usuarioId: 2, estado: 'pendiente', expiresAt: new Date(), detalles: [{ cantidad: 50, producto: libro! }, { cantidad: 2, producto: laptop! }] },
+      { idCompra: '333AAA', usuarioId: 3, estado: 'confirmado', expiresAt: new Date(), detalles: [{ cantidad: 1, producto: libro! }, { cantidad: 9, producto: tablet! }] },
+      { idCompra: '333BBB', usuarioId: 1, estado: 'confirmado', expiresAt: new Date(), detalles: [{ cantidad: 1, producto: libro! }, { cantidad: 9, producto: tablet! }] },
+      { idCompra: '333CCC', usuarioId: 1, estado: 'pendiente', expiresAt: new Date(), detalles: [{ cantidad: 1, producto: pelota! }, { cantidad: 90, producto: libro! }] },
+    ];
+
+    const createdReservas: Reserva[] = [];
+
+    for (const data of reservasSeedData) {
+      // 1. Verificar existencia de la Reserva por campo único: idCompra
+      const existing = await this.reservaRepository.findOne({
+        where: { idCompra: data.idCompra },
+      });
+
+      if (!existing) {
+        // 2. Si no existe, se crea y guarda la Reserva
+        const reserva = this.reservaRepository.create(data);
+        const newReserva = await this.reservaRepository.save(reserva);
+        createdReservas.push(newReserva);
+        console.log(`[UPSERT - Reserva] Creada con idCompra: ${data.idCompra}`);
+      } else {
+        console.log(`[UPSERT - Reserva] Ya existe con idCompra: ${data.idCompra}. Omitiendo inserción.`);
+        createdReservas.push(existing);
+      }
+    }
+
+    return createdReservas;
   }
 }
+
