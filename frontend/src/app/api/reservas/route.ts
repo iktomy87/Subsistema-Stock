@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions, ExtendedSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+function getTokenFromRequest(request: NextRequest): string | null {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+    }
+    return null;
+}
+
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions) as ExtendedSession | null;
+        const token = getTokenFromRequest(request);
 
-        if (!session?.accessToken) {
+        if (!token) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
@@ -19,7 +25,7 @@ export async function GET(request: NextRequest) {
 
         const response = await fetch(apiUrl, {
             headers: {
-                'Authorization': `Bearer ${session.accessToken}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -46,9 +52,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions) as ExtendedSession | null;
+        const token = getTokenFromRequest(request);
 
-        if (!session?.accessToken) {
+        if (!token) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
@@ -57,7 +63,7 @@ export async function POST(request: NextRequest) {
         const response = await fetch('https://api.cubells.com.ar/stock/reservas', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${session.accessToken}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),
