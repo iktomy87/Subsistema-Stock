@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions) as ExtendedSession | null;
 
         if (!session?.accessToken) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions) as ExtendedSession | null;
 
         if (!session?.accessToken) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
