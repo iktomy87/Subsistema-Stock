@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,40 +14,54 @@ function getTokenFromRequest(request: NextRequest): string | null {
 
 export async function GET(request: NextRequest) {
     try {
-        const token = getTokenFromRequest(request);
+        // Intentar obtener el token del header primero
+        let token = getTokenFromRequest(request);
+
+        // Si no hay token en el header, intentar obtenerlo de la sesión del servidor
+        if (!token) {
+            console.log('No token in header, trying session...');
+            const session = await getServerSession(authOptions);
+            token = session?.accessToken || null;
+            console.log('Session token exists:', !!token);
+        }
 
         if (!token) {
-            console.error('API Route - No token in Authorization header');
-            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+            console.error('API Route - No token available');
+            return NextResponse.json({ error: 'No autorizado - Token no disponible' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
         const queryString = searchParams.toString();
 
         const apiUrl = `https://api.cubells.com.ar/stock/categorias${queryString ? `?${queryString}` : ''}`;
+        console.log('Fetching from:', apiUrl);
 
         const response = await fetch(apiUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
+            cache: 'no-store',
         });
+
+        console.log('Backend response status:', response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Backend error:', response.status, errorText);
             return NextResponse.json(
-                { error: 'Error al obtener categorías' },
+                { error: `Error del backend: ${response.status}` },
                 { status: response.status }
             );
         }
 
         const data = await response.json();
+        console.log('Categories fetched successfully:', data.length || 0);
         return NextResponse.json(data);
     } catch (error) {
         console.error('API route error:', error);
         return NextResponse.json(
-            { error: 'Error interno del servidor' },
+            { error: error instanceof Error ? error.message : 'Error interno del servidor' },
             { status: 500 }
         );
     }
@@ -53,7 +69,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const token = getTokenFromRequest(request);
+        let token = getTokenFromRequest(request);
+
+        if (!token) {
+            const session = await getServerSession(authOptions);
+            token = session?.accessToken || null;
+        }
 
         if (!token) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
